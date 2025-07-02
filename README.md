@@ -10,6 +10,7 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 - **60+ AI Models**: Supports all latest models including GPT-4o, Claude 3.5, Mistral, Flux, Leonardo.ai, and more
 - **Streaming Support**: Real-time streaming responses for chat completions
 - **TypeScript**: Full type safety and modern development experience
+- **Vision Support**: Supports image input for vision models
 
 ## Supported Models
 
@@ -21,6 +22,9 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 - **DeepSeek**: deepseek-chat, deepseek-reasoner
 - **Meta**: llama-2-70b-chat, meta-llama-3.1-405b-instruct
 - **xAI**: grok-2
+
+### Vision Models (Image Input Support)
+- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
 
 ### Image Generation Models
 - **DALL-E**: dall-e-2, dall-e-3
@@ -38,6 +42,33 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 ### Chat Completions
 ```
 POST /v1/chat/completions
+```
+
+#### Vision Support Example
+```bash
+curl -X POST http://localhost:8787/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What do you see in this image?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+            }
+          }
+        ]
+      }
+    ]
+  }'
 ```
 
 ### Image Generation

@@ -11,7 +11,13 @@ interface ChatCompletionRequest {
   model?: string;
   messages: Array<{
     role: string;
-    content: string;
+    content: string | Array<{
+      type: string;
+      text?: string;
+      image_url?: {
+        url: string;
+      };
+    }>;
   }>;
   temperature?: number;
   max_tokens?: number;
@@ -34,7 +40,12 @@ interface OneMinResponse {
 }
 
 interface OneMinImageResponse {
-  images: string[];
+  aiRecord: {
+    temporaryUrl: string;
+    aiRecordDetail: {
+      resultObject: string[];
+    };
+  };
 }
 
 // Define environment variables interface
@@ -220,7 +231,71 @@ const SPEECH_TO_TEXT_MODELS = [
 
 // Helper function to generate UUID (similar to the Python uuid module)
 function generateUUID(): string {
-  return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// Helper function to process image URL (base64 or HTTP URL)
+async function processImageUrl(imageUrl: string): Promise<ArrayBuffer> {
+  if (imageUrl.startsWith('data:image/')) {
+    // Handle base64 encoded images
+    const base64Data = imageUrl.split(',')[1];
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } else {
+    // Download image from URL
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+    return response.arrayBuffer();
+  }
+}
+
+// Helper function to upload image to 1min.ai asset API
+async function uploadImageToAsset(imageData: ArrayBuffer, apiKey: string, env: Env): Promise<string> {
+  const formData = new FormData();
+  const blob = new Blob([imageData], { type: 'image/png' });
+  const filename = `relay${generateUUID()}`;
+  formData.append('asset', blob, filename);
+  
+  const response = await fetch(env.ONE_MIN_ASSET_URL, {
+    method: 'POST',
+    headers: {
+      'API-KEY': apiKey,
+    },
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to upload image: ${response.status}`);
+  }
+  
+  const result = await response.json() as { fileContent: { path: string } };
+  return result.fileContent.path;
+}
+
+// Helper function to extract text content from message content (string or array)
+function extractTextFromContent(content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  // Extract text from array content
+  const textParts: string[] = [];
+  for (const item of content) {
+    if (item.type === 'text' && item.text) {
+      textParts.push(item.text);
+    }
+  }
+  return textParts.join('\n');
 }
 
 // Rate limiting related interfaces and types
@@ -273,78 +348,68 @@ function calculateTokens(text: string, model: string = "DEFAULT"): number {
 // Rate limiting middleware using Cloudflare KV
 // Implements distributed rate limiting with per-minute request and token limits
 async function rateLimitMiddleware(
-  request: Request,
   env: Env,
-  endpoint: string
+  endpoint: string,
+  clientIP: string,
+  requestData?: ChatCompletionRequest
 ): Promise<Response | null> {
   if (!env.RATE_LIMIT_STORE) {
     // Skip rate limiting if KV is not configured
     return null;
   }
 
-  const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-  const windowStart = Math.floor(currentTime / 60) * 60; // Start of current minute
-
-  // Create different rate limit keys for different endpoints
-  const requestKey = `rate_limit:${clientIP}:${endpoint}:requests:${windowStart}`;
-  const tokenKey = `rate_limit:${clientIP}:${endpoint}:tokens:${windowStart}`;
-
-  // Rate limit configuration
-  const REQUESTS_PER_MINUTE = 60;
-  const TOKENS_PER_MINUTE = 10000;
+  const now = Date.now();
+  const config = RATE_LIMITS[endpoint] || RATE_LIMITS.default;
+  
+  const requestKey = `rate_limit:${endpoint}:${clientIP}:requests`;
+  const tokenKey = `rate_limit:${endpoint}:${clientIP}:tokens`;
 
   try {
     // Get current request count
     const currentRequests = parseInt(await env.RATE_LIMIT_STORE.get(requestKey) || '0');
-
+    
     // Check request rate limit
-    if (currentRequests >= REQUESTS_PER_MINUTE) {
+    if (currentRequests >= config.maxRequests) {
       return new Response(JSON.stringify({
         error: {
-          message: 'Rate limit exceeded for requests per minute',
-          type: 'rate_limit_exceeded',
-          code: 'requests_per_minute_exceeded'
+          message: "Rate limit exceeded. Too many requests.",
+          type: "rate_limit_exceeded",
+          code: "rate_limit_exceeded"
         }
       }), {
         status: 429,
         headers: {
-          'Content-Type': 'application/json',
-          'X-RateLimit-Limit-Requests': REQUESTS_PER_MINUTE.toString(),
-          'X-RateLimit-Remaining-Requests': '0',
-          'X-RateLimit-Reset': (windowStart + 60).toString(),
-          'Retry-After': '60'
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Retry-After": "60"
         }
       });
     }
 
     // For chat completion requests, also check token limits
-    if (endpoint === 'chat') {
-      const requestBody = await request.clone().json() as ChatCompletionRequest;
-      const messages = requestBody.messages || [];
+    if (endpoint === 'chat' && requestData) {
+      const messages = requestData.messages || [];
       const totalTokens = messages.reduce((sum, msg) => {
-        return sum + calculateTokens(msg.content, requestBody.model);
+        return sum + calculateTokens(extractTextFromContent(msg.content), requestData.model);
       }, 0);
 
       // Get current token count
       const currentTokens = parseInt(await env.RATE_LIMIT_STORE.get(tokenKey) || '0');
-
-      // Check token rate limit
-      if (currentTokens + totalTokens > TOKENS_PER_MINUTE) {
+      
+      // Check token rate limit (if configured)
+      if (config.maxTokens && (currentTokens + totalTokens) > config.maxTokens) {
         return new Response(JSON.stringify({
           error: {
-            message: 'Rate limit exceeded for tokens per minute',
-            type: 'rate_limit_exceeded',
-            code: 'tokens_per_minute_exceeded'
+            message: "Rate limit exceeded. Too many tokens.",
+            type: "rate_limit_exceeded",
+            code: "rate_limit_exceeded"
           }
         }), {
           status: 429,
           headers: {
-            'Content-Type': 'application/json',
-            'X-RateLimit-Limit-Tokens': TOKENS_PER_MINUTE.toString(),
-            'X-RateLimit-Remaining-Tokens': Math.max(0, TOKENS_PER_MINUTE - currentTokens - totalTokens).toString(),
-            'X-RateLimit-Reset': (windowStart + 60).toString(),
-            'Retry-After': '60'
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Retry-After": "60"
           }
         });
       }
@@ -374,7 +439,7 @@ function formatConversationHistory(messages: any[], newInput: string = ''): stri
 
   for (const message of messages) {
     const role = message.role;
-    const content = message.content;
+    const content = extractTextFromContent(message.content);
 
     if (role === "system") {
       formattedHistory += `System: ${content}\n\n`;
@@ -593,14 +658,14 @@ export default {
         let totalTokens = 0;
         if (requestData.messages) {
           for (const message of requestData.messages) {
-            totalTokens += calculateTokens(message.content || '', model);
+            totalTokens += calculateTokens(extractTextFromContent(message.content) || '', model);
           }
         }
 
-        // Check rate limiting
-        const rateLimitResponse = await rateLimitMiddleware(request, env, 'chat');
-        if (rateLimitResponse) {
-          return rateLimitResponse;
+        // Check if API key is provided
+        const apiKey = request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+        if (!apiKey) {
+          return errorHandler(1001);
         }
 
         // Check if model is valid
@@ -608,10 +673,40 @@ export default {
           return errorHandler(1002, model);
         }
 
-        // Check if API key is provided
-        const apiKey = request.headers.get("Authorization")?.replace("Bearer ", "") || "";
-        if (!apiKey) {
-          return errorHandler(1001);
+        // Check rate limiting (after parsing request data to avoid ReadableStream locking)
+        const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const rateLimitResponse = await rateLimitMiddleware(env, 'chat', clientIP, requestData);
+        if (rateLimitResponse) {
+          return rateLimitResponse;
+        }
+
+        // Process images and check for vision model support
+        const imagePaths: string[] = [];
+        let hasImages = false;
+        
+        for (const message of requestData.messages || []) {
+          if (Array.isArray(message.content)) {
+            for (const item of message.content) {
+              if (item.type === 'image_url' && item.image_url?.url) {
+                hasImages = true;
+                
+                // Check if model supports vision
+                if (!VISION_SUPPORTED_MODELS.includes(model)) {
+                  return errorHandler(1044, model);
+                }
+                
+                try {
+                  // Process and upload image
+                  const imageData = await processImageUrl(item.image_url.url);
+                  const imagePath = await uploadImageToAsset(imageData, apiKey, env);
+                  imagePaths.push(imagePath);
+                } catch (error) {
+                  console.error('Image processing error:', error);
+                  return errorHandler(1003); // Internal server error
+                }
+              }
+            }
+          }
         }
 
         // Format messages for the API call
@@ -627,8 +722,9 @@ export default {
           model: model,
           promptObject: {
             prompt: formattedHistory,
-            isMixed: false,
-            webSearch: false
+            isMixed: hasImages,
+            webSearch: false,
+            ...(hasImages && imagePaths.length > 0 && { imagePaths })
           }
         };
 
@@ -769,14 +865,15 @@ export default {
     // Handle image generation endpoint
     if (url.pathname === '/v1/images/generations') {
       try {
-        // Check rate limiting
-        const rateLimitResponse = await rateLimitMiddleware(request, env, 'image');
+        // Parse the request body
+        const requestData = await request.json() as ImageGenerationRequest;
+
+        // Check rate limiting (after parsing request data to avoid ReadableStream locking)
+        const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const rateLimitResponse = await rateLimitMiddleware(env, 'image', clientIP);
         if (rateLimitResponse) {
           return rateLimitResponse;
         }
-
-        // Parse the request body
-        const requestData = await request.json() as ImageGenerationRequest;
 
         // Check if model is valid
         const model = requestData.model || "stable-image";
@@ -820,10 +917,10 @@ export default {
         // Transform the response to match OpenAI format
         const transformedResponse = {
           created: Math.floor(Date.now() / 1000),
-          data: oneMinResponse.images.map((image: string) => ({
-            url: image,
+          data: [{
+            url: oneMinResponse.aiRecord.temporaryUrl,
             b64_json: null,
-          })),
+          }],
         };
 
         const headers = new Headers();
