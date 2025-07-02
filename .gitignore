@@ -9,7 +9,7 @@ yarn.lock
 pnpm-lock.yaml
 
 # Ignore Wrangler configuration files with secrets
-wrangler.toml
+# wrangler.toml (commented out to allow template)
 .wrangler/
 
 # Ignore local environment variables
