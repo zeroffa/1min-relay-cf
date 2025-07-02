@@ -40,17 +40,18 @@ interface OneMinImageResponse {
 
 // Define environment variables interface
 interface Env {
-  // Environment variables from wrangler.toml
+  // API URLs for 1min.ai services (matching Python version)
   ONE_MIN_API_URL: string;
   ONE_MIN_CONVERSATION_API_URL: string;
   ONE_MIN_CONVERSATION_API_STREAMING_URL: string;
   ONE_MIN_ASSET_URL: string;
 
   // KV Namespace for rate limiting (if enabled)
-  // 注意：這裡的 KV 存儲替代了原始 Python 版本中的 memcached
-  // 原始專案使用 memcached 的主要目的是實現分佈式速率限制
-  // 在多個應用伺服器實例之間共享速率限制狀態，確保無論哪個實例處理請求，都能正確執行限制
-  // Cloudflare Worker 中，我們使用 KV 存儲來實現相同的功能
+  // Note: KV storage replaces memcached from the original Python version
+  // The original project used memcached for distributed rate limiting
+  // to share rate limit state across multiple app server instances
+  // ensuring consistent enforcement regardless of which instance handles the request
+  // In Cloudflare Workers, we use KV storage to achieve the same functionality
   RATE_LIMIT_STORE?: KVNamespace;
 }
 
@@ -637,7 +638,7 @@ export default {
 
         // Handle streaming vs non-streaming requests
         if (requestData.stream) {
-          // For streaming responses
+          // For streaming responses (matching Python version)
           const response = await fetch(env.ONE_MIN_CONVERSATION_API_STREAMING_URL, {
             method: "POST",
             headers: {
@@ -733,7 +734,7 @@ export default {
             },
           });
         } else {
-          // For non-streaming responses
+          // For non-streaming responses (matching Python version)
           const response = await fetch(env.ONE_MIN_API_URL, {
             method: "POST",
             headers: {
@@ -801,8 +802,8 @@ export default {
           size: requestData.size || "1024x1024",
         };
 
-        // Call 1min.ai API for image generation
-        const response = await fetch(env.ONE_MIN_ASSET_URL, {
+        // Call 1min.ai API for image generation (matching Python version)
+        const response = await fetch(env.ONE_MIN_API_URL + "?isStreaming=false", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

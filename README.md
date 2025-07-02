@@ -74,8 +74,8 @@ Rate limits are enforced using Cloudflare KV storage, ensuring consistency acros
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd worker
+git clone https://github.com/7a6163/1min-relay-worker.git
+cd 1min-relay-worker
 ```
 
 2. Install dependencies:
@@ -86,9 +86,12 @@ npm install
 3. Configure environment variables in `wrangler.toml`:
 ```toml
 [env.production.vars]
-ONEMIN_CHAT_API_URL = "https://api.1min.ai/v1/chat/completions"
-ONEMIN_IMAGE_API_URL = "https://api.1min.ai/v1/images/generations"
+ONE_MIN_API_URL = "https://api.1min.ai/api/features"
+ONE_MIN_CONVERSATION_API_URL = "https://api.1min.ai/api/conversations"
+ONE_MIN_CONVERSATION_API_STREAMING_URL = "https://api.1min.ai/api/features?isStreaming=true"
+ONE_MIN_ASSET_URL = "https://api.1min.ai/api/assets"
 ```
+
 
 4. Create KV namespace for rate limiting:
 ```bash
