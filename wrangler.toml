@@ -1,6 +1,6 @@
 name = "1min-relay"
 main = "src/index.ts"
-compatibility_date = "2024-09-23"
+compatibility_date = "2025-07-02"
 
 [build]
 command = "npm run build"
