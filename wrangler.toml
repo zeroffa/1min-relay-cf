@@ -11,7 +11,9 @@ ONE_MIN_CONVERSATION_API_URL = "https://api.1min.ai/api/conversations"
 ONE_MIN_CONVERSATION_API_STREAMING_URL = "https://api.1min.ai/api/features?isStreaming=true"
 ONE_MIN_ASSET_URL = "https://api.1min.ai/api/assets"
 
-# Uncomment to use KV for rate limiting
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_STORE"
-# id = "your-kv-namespace-id"
+# KV Namespace for rate limiting
+# 注意：在生產環境中，需要創建實際的 KV 命名空間並替換 id
+[[kv_namespaces]]
+binding = "RATE_LIMIT_STORE"
+preview_id = "rate-limit-store-preview"
+id = "rate-limit-store-preview"  # 開發環境使用 preview_id 作為臨時 id

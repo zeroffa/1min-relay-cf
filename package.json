@@ -10,12 +10,22 @@
     "format": "prettier --write 'src/**/*.{ts,js}'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["cloudflare", "worker", "1min.ai", "api", "relay"],
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "1min.ai",
+    "api",
+    "relay"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250701.0",
     "typescript": "^5.8.3",
     "wrangler": "^4.22.0"
+  },
+  "dependencies": {
+    "gpt-tokenizer": "^3.0.1",
+    "mistral-tokenizer-ts": "^2.2.1"
   }
 }
