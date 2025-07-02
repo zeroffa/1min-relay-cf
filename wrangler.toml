@@ -1,0 +1,17 @@
+name = "1min-relay-worker"
+main = "src/index.ts"
+compatibility_date = "2023-07-02"
+
+[build]
+command = "npm run build"
+
+[vars]
+ONE_MIN_API_URL = "https://api.1min.ai/api/features"
+ONE_MIN_CONVERSATION_API_URL = "https://api.1min.ai/api/conversations"
+ONE_MIN_CONVERSATION_API_STREAMING_URL = "https://api.1min.ai/api/features?isStreaming=true"
+ONE_MIN_ASSET_URL = "https://api.1min.ai/api/assets"
+
+# Uncomment to use KV for rate limiting
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_STORE"
+# id = "your-kv-namespace-id"
