@@ -4,8 +4,7 @@
  * Features distributed rate limiting and accurate token counting
  */
 
-import * as gptTokenizer from 'gpt-tokenizer';
-import { getTokenizerForModel } from 'mistral-tokenizer-ts';
+import { encode as gptTokenizer } from 'gpt-tokenizer';
 
 // Define interfaces for request and response data
 interface ChatCompletionRequest {
@@ -256,21 +255,16 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
 };
 
 // Helper function to calculate tokens for a given text and model
-// Uses appropriate tokenizer based on model type
+// Uses gpt-tokenizer for all models with character-based fallback for accuracy
 function calculateTokens(text: string, model: string = "DEFAULT"): number {
   try {
-    // Use Mistral tokenizer for Mistral models
-    if (model.includes('mistral') || model.includes('mixtral') || model.includes('pixtral')) {
-      const tokenizer = getTokenizerForModel('open-mistral-7b'); // Default Mistral model
-      const tokens = tokenizer.encode(text);
-      return tokens.length;
-    }
-
-    // Use GPT tokenizer for all other models
-    const tokens = gptTokenizer.encode(text);
+    // Use GPT tokenizer for all models (works reasonably well for most text)
+    // Note: While not perfect for Mistral models, gpt-tokenizer provides
+    // a good approximation that's compatible with Cloudflare Workers
+    const tokens = gptTokenizer(text);
     return tokens.length;
   } catch (error) {
-    // Fallback to simple character-based estimation if tokenization fails
+    // Fallback to character-based estimation if tokenization fails
     console.error('Token calculation failed:', error);
     return Math.ceil(text.length / 4); // Rough estimate: ~4 characters per token
   }
@@ -629,21 +623,23 @@ export default {
 
         // Prepare request to 1min.ai API
         const oneMinRequest = {
+          type: "CHAT_WITH_AI",
           model: model,
-          prompt: formattedHistory,
-          temperature: requestData.temperature || 0.7,
-          max_tokens: requestData.max_tokens || 1024,
-          stream: requestData.stream || false,
+          promptObject: {
+            prompt: formattedHistory,
+            isMixed: false,
+            webSearch: false
+          }
         };
 
         // Handle streaming vs non-streaming requests
         if (requestData.stream) {
-          // For streaming responses (matching Python version)
+          // For streaming responses
           const response = await fetch(env.ONE_MIN_CONVERSATION_API_STREAMING_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${apiKey}`,
+              "API-KEY": apiKey,
             },
             body: JSON.stringify(oneMinRequest),
           });
@@ -739,7 +735,7 @@ export default {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${apiKey}`,
+              "API-KEY": apiKey,
             },
             body: JSON.stringify(oneMinRequest),
           });
@@ -796,10 +792,13 @@ export default {
 
         // Prepare request to 1min.ai API
         const oneMinRequest = {
+          type: "IMAGE_GENERATOR",
           model: model,
-          prompt: requestData.prompt,
-          n: requestData.n || 1,
-          size: requestData.size || "1024x1024",
+          promptObject: {
+            prompt: requestData.prompt,
+            n: requestData.n || 1,
+            size: requestData.size || "1024x1024"
+          }
         };
 
         // Call 1min.ai API for image generation (matching Python version)
@@ -807,7 +806,7 @@ export default {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
+            "API-KEY": apiKey,
           },
           body: JSON.stringify(oneMinRequest),
         });
