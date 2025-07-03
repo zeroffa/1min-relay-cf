@@ -265,7 +265,7 @@ async function uploadImageToAsset(imageData: ArrayBuffer, apiKey: string, env: E
   const blob = new Blob([imageData], { type: 'image/png' });
   const filename = `relay${generateUUID()}`;
   formData.append('asset', blob, filename);
-  
+
   const response = await fetch(env.ONE_MIN_ASSET_URL, {
     method: 'POST',
     headers: {
@@ -273,11 +273,11 @@ async function uploadImageToAsset(imageData: ArrayBuffer, apiKey: string, env: E
     },
     body: formData,
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to upload image: ${response.status}`);
   }
-  
+
   const result = await response.json() as { fileContent: { path: string } };
   return result.fileContent.path;
 }
@@ -287,7 +287,7 @@ function extractTextFromContent(content: string | Array<{ type: string; text?: s
   if (typeof content === 'string') {
     return content;
   }
-  
+
   // Extract text from array content
   const textParts: string[] = [];
   for (const item of content) {
@@ -360,14 +360,14 @@ async function rateLimitMiddleware(
 
   const now = Date.now();
   const config = RATE_LIMITS[endpoint] || RATE_LIMITS.default;
-  
+
   const requestKey = `rate_limit:${endpoint}:${clientIP}:requests`;
   const tokenKey = `rate_limit:${endpoint}:${clientIP}:tokens`;
 
   try {
     // Get current request count
     const currentRequests = parseInt(await env.RATE_LIMIT_STORE.get(requestKey) || '0');
-    
+
     // Check request rate limit
     if (currentRequests >= config.maxRequests) {
       return new Response(JSON.stringify({
@@ -395,7 +395,7 @@ async function rateLimitMiddleware(
 
       // Get current token count
       const currentTokens = parseInt(await env.RATE_LIMIT_STORE.get(tokenKey) || '0');
-      
+
       // Check token rate limit (if configured)
       if (config.maxTokens && (currentTokens + totalTokens) > config.maxTokens) {
         return new Response(JSON.stringify({
@@ -683,18 +683,18 @@ export default {
         // Process images and check for vision model support
         const imagePaths: string[] = [];
         let hasImages = false;
-        
+
         for (const message of requestData.messages || []) {
           if (Array.isArray(message.content)) {
             for (const item of message.content) {
               if (item.type === 'image_url' && item.image_url?.url) {
                 hasImages = true;
-                
+
                 // Check if model supports vision
                 if (!VISION_SUPPORTED_MODELS.includes(model)) {
                   return errorHandler(1044, model);
                 }
-                
+
                 try {
                   // Process and upload image
                   const imageData = await processImageUrl(item.image_url.url);
