@@ -4,7 +4,8 @@
 
 import { Env, ChatCompletionRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { calculateTokens, generateUUID, extractImageFromContent, createErrorResponse, createSuccessResponse } from '../utils';
+import { calculateTokens, generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
+import { extractImageFromContent, isVisionSupportedModel } from '../utils/image';
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants';
 
 export class ChatHandler {
@@ -35,15 +36,21 @@ export class ChatHandler {
 
       // Set default model if not provided
       const model = requestBody.model || DEFAULT_MODEL;
-      
+
       // Validate model
       if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(model)) {
         return createErrorResponse(`Model '${model}' is not supported`);
       }
 
+      // Check for images and validate vision model support
+      const hasImages = this.checkForImages(requestBody.messages);
+      if (hasImages && !isVisionSupportedModel(model)) {
+        return createErrorResponse(`Model '${model}' does not support vision inputs. Please use a vision-supported model like gpt-4o, gpt-4o-mini, or gpt-4-turbo.`, 400);
+      }
+
       // Process messages and extract images if any
       const processedMessages = this.processMessages(requestBody.messages);
-      
+
       // Handle streaming vs non-streaming
       if (requestBody.stream) {
         return this.handleStreamingChat(processedMessages, model, requestBody.temperature, requestBody.max_tokens, apiKey);
@@ -54,6 +61,19 @@ export class ChatHandler {
       console.error('Chat completion error:', error);
       return createErrorResponse('Internal server error', 500);
     }
+  }
+
+  private checkForImages(messages: any[]): boolean {
+    for (const message of messages) {
+      if (Array.isArray(message.content)) {
+        for (const item of message.content) {
+          if (item.type === 'image_url' && item.image_url?.url) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   private processMessages(messages: any[]): any[] {
@@ -82,18 +102,18 @@ export class ChatHandler {
   }
 
   private async handleNonStreamingChat(
-    messages: any[], 
-    model: string, 
-    temperature?: number, 
+    messages: any[],
+    model: string,
+    temperature?: number,
     maxTokens?: number,
     apiKey?: string
   ): Promise<Response> {
-    const requestBody = this.apiService.buildChatRequestBody(messages, model, temperature, maxTokens);
-    
     try {
+      const requestBody = await this.apiService.buildChatRequestBody(messages, model, apiKey || '', temperature, maxTokens);
+
       const response = await this.apiService.sendChatRequest(requestBody, false, apiKey);
       const data = await response.json();
-      
+
       // Transform response to OpenAI format
       const openAIResponse = this.transformToOpenAIFormat(data, model);
       return createSuccessResponse(openAIResponse);
@@ -104,21 +124,21 @@ export class ChatHandler {
   }
 
   private async handleStreamingChat(
-    messages: any[], 
-    model: string, 
-    temperature?: number, 
+    messages: any[],
+    model: string,
+    temperature?: number,
     maxTokens?: number,
     apiKey?: string
   ): Promise<Response> {
-    const requestBody = this.apiService.buildStreamingChatRequestBody(messages, model, temperature, maxTokens);
-    
     try {
+      const requestBody = await this.apiService.buildChatRequestBody(messages, model, apiKey || '', temperature, maxTokens);
+
       const response = await this.apiService.sendChatRequest(requestBody, true, apiKey);
-      
+
       // Create streaming response following original implementation
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
-      
+
       // Process the stream
       const reader = response.body?.getReader();
       if (!reader) {
