@@ -3,6 +3,9 @@
  */
 
 import { Env, OneMinResponse, OneMinImageResponse } from '../types';
+import { API_ENDPOINTS } from '../constants';
+import { createErrorResponse } from '../utils';
+import { processImageUrl, uploadImageToAsset } from '../utils/image';
 import { generateUUID } from '../utils';
 
 // Helper function to extract text content from message content (string or array)
@@ -55,7 +58,7 @@ export class OneMinApiService {
   }
 
   async sendChatRequest(requestBody: any, isStreaming: boolean = false, apiKey?: string): Promise<Response> {
-    const apiUrl = isStreaming 
+    const apiUrl = isStreaming
       ? this.env.ONE_MIN_CONVERSATION_API_STREAMING_URL
       : this.env.ONE_MIN_API_URL;
 
@@ -105,7 +108,7 @@ export class OneMinApiService {
     return data as OneMinImageResponse;
   }
 
-  buildChatRequestBody(messages: any[], model: string, temperature?: number, maxTokens?: number): any {
+  async buildChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
     let hasImages = false;
@@ -115,8 +118,18 @@ export class OneMinApiService {
         for (const item of message.content) {
           if (item.type === 'image_url' && item.image_url?.url) {
             hasImages = true;
-            // Note: Image processing would need to be implemented here
-            // For now, we'll just mark that images are present
+
+            try {
+              // Process and upload image
+              const imageData = await processImageUrl(item.image_url.url);
+              const imagePath = await uploadImageToAsset(imageData, apiKey, this.env.ONE_MIN_ASSET_URL);
+              if (imagePath) {
+                imagePaths.push(imagePath);
+              }
+            } catch (error) {
+              console.error('Error processing image:', error);
+              // Continue processing other images even if one fails
+            }
           }
         }
       }
@@ -125,17 +138,28 @@ export class OneMinApiService {
     // Format messages for the API call
     const formattedHistory = formatConversationHistory(messages, "");
 
-    // Prepare request to 1min.ai API
-    return {
-      type: "CHAT_WITH_AI",
-      model: model,
-      promptObject: {
-        prompt: formattedHistory,
-        isMixed: hasImages,
-        webSearch: false,
-        ...(hasImages && imagePaths.length > 0 && { imagePaths })
-      }
-    };
+    // Prepare request to 1min.ai API - use different type for images
+    if (hasImages && imagePaths.length > 0) {
+      return {
+        type: "CHAT_WITH_IMAGE",
+        model: model,
+        promptObject: {
+          prompt: formattedHistory,
+          isMixed: false,
+          imageList: imagePaths
+        }
+      };
+    } else {
+      return {
+        type: "CHAT_WITH_AI",
+        model: model,
+        promptObject: {
+          prompt: formattedHistory,
+          isMixed: false,
+          webSearch: false
+        }
+      };
+    }
   }
 
   buildStreamingChatRequestBody(messages: any[], model: string, temperature?: number, maxTokens?: number): any {

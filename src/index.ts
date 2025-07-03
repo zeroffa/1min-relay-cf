@@ -6,6 +6,7 @@
 import { Env } from './types';
 import { API_ENDPOINTS } from './constants';
 import { calculateTokens, createErrorResponse } from './utils';
+import { extractTextFromContent } from './utils/image';
 import { handleCors, RateLimiter } from './middleware';
 import { handleModelsEndpoint, ChatHandler, ImageHandler } from './handlers';
 
@@ -26,6 +27,9 @@ export default {
     try {
       // Route handling
       switch (path) {
+        case '/':
+          return handleRootEndpoint(request);
+
         case API_ENDPOINTS.MODELS:
           return handleModelsEndpoint();
 
@@ -45,9 +49,28 @@ export default {
   },
 };
 
+function handleRootEndpoint(request: Request): Response {
+  if (request.method === 'GET') {
+    return new Response(
+      "Congratulations! Your API is working! You can now make requests to the API.\n\nEndpoint: " +
+      new URL(request.url).origin + "/v1",
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
+    );
+  }
+  return createErrorResponse('Method Not Allowed', 405);
+}
+
 async function handleChatCompletionsWithRateLimit(
-  request: Request, 
-  env: Env, 
+  request: Request,
+  env: Env,
   rateLimiter: RateLimiter
 ): Promise<Response> {
   try {
@@ -60,7 +83,15 @@ async function handleChatCompletionsWithRateLimit(
     // Parse request to calculate tokens for rate limiting
     const requestBody: any = await request.json();
     const messageText = requestBody.messages
-      ?.map((msg: any) => typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))
+      ?.map((msg: any) => {
+        if (typeof msg.content === 'string') {
+          return msg.content;
+        } else if (Array.isArray(msg.content)) {
+          // For mixed content (text + images), only count text tokens
+          return extractTextFromContent(msg.content);
+        }
+        return '';
+      })
       .join(' ') || '';
     const tokenCount = calculateTokens(messageText, requestBody.model);
 
@@ -80,8 +111,8 @@ async function handleChatCompletionsWithRateLimit(
 }
 
 async function handleImageGenerationWithRateLimit(
-  request: Request, 
-  env: Env, 
+  request: Request,
+  env: Env,
   rateLimiter: RateLimiter
 ): Promise<Response> {
   try {

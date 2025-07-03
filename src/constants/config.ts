@@ -5,7 +5,7 @@
 // Rate limiting configuration
 export const RATE_LIMIT_CONFIG = {
   windowMs: 60 * 1000,      // 1 minute window
-  maxRequests: 60,          // Maximum 60 requests per minute
+  maxRequests: 180,         // Maximum 180 requests per minute
   maxTokens: 100000,        // Maximum 100k tokens per minute
 };
 
