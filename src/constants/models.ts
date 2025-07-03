@@ -7,6 +7,7 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   // OpenAI
   "gpt-o1-pro",
   "gpt-o4-mini",
+  "gpt-4.1",
   "gpt-4.1-nano",
   "gpt-4.1-mini",
   "o3-mini",
