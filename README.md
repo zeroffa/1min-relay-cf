@@ -1,6 +1,5 @@
 # 1min-relay Cloudflare Worker
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/7a6163/1min-relay-worker)
 
 A TypeScript implementation of the 1min.ai API relay service, designed to run on Cloudflare Workers with distributed rate limiting and accurate token counting.
 
@@ -8,7 +7,7 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 
 - **Complete API Relay**: Full compatibility with 1min.ai chat completions and image generation endpoints
 - **Distributed Rate Limiting**: Uses Cloudflare KV for consistent rate limiting across multiple worker instances
-- **Accurate Token Counting**: Integrated with `gpt-tokenizer` and `mistral-tokenizer-ts` for precise token calculation
+- **Accurate Token Counting**: Integrated with `gpt-tokenizer` for precise token calculation across all models
 - **60+ AI Models**: Supports all latest models including GPT-4o, Claude 3.5, Mistral, Flux, Leonardo.ai, and more
 - **Streaming Support**: Real-time streaming responses for chat completions
 - **TypeScript**: Full type safety and modern development experience
@@ -131,7 +130,16 @@ ONE_MIN_ASSET_URL = "https://api.1min.ai/api/assets"
 wrangler kv:namespace create "RATE_LIMIT_STORE"
 ```
 
-5. Update the KV namespace ID in `wrangler.toml`.
+5. After running the command above, you'll receive a KV namespace ID. Copy this ID and replace `[your-kv-namespace-id]` in your `wrangler.jsonc` or `wrangler.toml` file:
+
+```jsonc
+"kv_namespaces": [
+  {
+    "binding": "RATE_LIMIT_STORE",
+    "id": "your-kv-namespace-id-here" // Replace this with the ID from step 4
+  }
+]
+```
 
 ### Development
 
@@ -142,10 +150,55 @@ npm run dev
 
 ### Deployment
 
-Deploy to Cloudflare Workers:
+#### Quick Deployment
+
+The fastest way to deploy is using the Cloudflare Deploy button at the top of this README:
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/7a6163/1min-relay-worker)
+
+#### Manual Deployment
+
+1. Make sure you've completed all the setup steps above, including creating and configuring the KV namespace.
+
+2. Build the project:
+```bash
+npm run build
+```
+
+3. Deploy to Cloudflare Workers:
 ```bash
 npm run deploy
 ```
+
+4. After successful deployment, you'll receive a URL for your worker (typically `https://1min-relay.your-subdomain.workers.dev`).
+
+#### Custom Domain Configuration
+
+To use a custom domain with your worker:
+
+1. Log in to the Cloudflare dashboard.
+
+2. Navigate to the Workers & Pages section.
+
+3. Select your deployed worker.
+
+4. Click on "Triggers" tab.
+
+5. Under "Custom Domains", click "Add Custom Domain" and follow the instructions.
+
+#### Deployment Troubleshooting
+
+If you encounter issues during deployment:
+
+1. **Authentication errors**: Run `wrangler login` to authenticate with your Cloudflare account.
+
+2. **KV binding errors**: Ensure your KV namespace is correctly configured in `wrangler.jsonc`.
+
+3. **Build errors**: Make sure all dependencies are installed with `npm install`.
+
+4. **Rate limit errors**: If you're hitting Cloudflare's deployment rate limits, wait a few minutes before trying again.
+
+5. **Environment variable issues**: Verify all required environment variables are set in `wrangler.jsonc`.
 
 ## Configuration
 
@@ -201,8 +254,7 @@ The worker is built with:
 - **TypeScript**: For type safety and better development experience
 - **Cloudflare Workers**: Serverless edge computing platform
 - **Cloudflare KV**: Distributed key-value storage for rate limiting
-- **gpt-tokenizer**: Accurate token counting for OpenAI models
-- **mistral-tokenizer-ts**: Accurate token counting for Mistral models
+- **gpt-tokenizer**: Accurate token counting for all supported models
 
 ## Rate Limiting Implementation
 
@@ -215,10 +267,7 @@ The distributed rate limiting system:
 
 ## Token Counting
 
-Accurate token counting is implemented for:
-- **GPT models**: Using `gpt-tokenizer` library
-- **Mistral models**: Using `mistral-tokenizer-ts` library
-- **Other models**: Fallback to GPT tokenizer with appropriate adjustments
+Accurate token counting is implemented using the `gpt-tokenizer` library, which provides good approximations for all supported models including GPT, Claude, Mistral, and others. A character-based fallback is used if tokenization fails.
 
 ## Contributing
 
