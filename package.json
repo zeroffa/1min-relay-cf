@@ -1,0 +1,32 @@
+{
+  "name": "1min-relay-cf",
+  "version": "2.5.0",
+  "description": "Cloudflare Worker implementation of 1min-relay",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "format": "prettier --write 'src/**/*.{ts,js}'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "1min.ai",
+    "api",
+    "relay"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250701.0",
+    "@types/node": "^24.0.10",
+    "@types/service-worker-mock": "^2.0.4",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.22.0"
+  },
+  "dependencies": {
+    "gpt-tokenizer": "^3.0.1"
+  }
+}
