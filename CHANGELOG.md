@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.6.0] - 2025-07-05
+### Added
+- New Gemini models support:
+  - `gemini-2.0-flash`
+  - `gemini-2.0-flash-lite`
+  - `gemini-2.5-flash-preview-05-20`
+  - `gemini-2.5-flash-preview-04-17`
+  - `gemini-2.5-pro-preview-05-06`
+- New Perplexity Sonar models support:
+  - `sonar-reasoning-pro`
+  - `sonar-reasoning`
+  - `sonar-pro`
+  - `sonar`
+
+## [2.5.0] - 2025-07-04
+### Added
+- Image search capability
+- Enhanced image processing and search functionality
+
 ## [2.0.0] - 2025-07-03
 ### Added
 - Initial release
