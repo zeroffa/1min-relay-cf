@@ -19,10 +19,11 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 - **OpenAI**: o3-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo, and more
 - **Claude**: claude-3-5-sonnet, claude-3-opus, claude-3-haiku
 - **MistralAI**: mistral-large-latest, mistral-small-latest, pixtral-12b
-- **GoogleAI**: gemini-1.5-pro, gemini-1.5-flash
+- **GoogleAI**: gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash, gemini-2.0-flash-lite, gemini-2.5-flash-preview-05-20, gemini-2.5-flash-preview-04-17, gemini-2.5-pro-preview-05-06
 - **DeepSeek**: deepseek-chat, deepseek-reasoner
 - **Meta**: llama-2-70b-chat, meta-llama-3.1-405b-instruct
 - **xAI**: grok-2
+- **Perplexity Sonar**: sonar-reasoning-pro, sonar-reasoning, sonar-pro, sonar
 
 ### Vision Models (Image Input Support)
 - **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
