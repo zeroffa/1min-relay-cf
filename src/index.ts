@@ -50,9 +50,6 @@ export default {
 };
 
 function handleRootEndpoint(request: Request): Response {
-  if (request.method === 'GET') {
-    return new Response(
-      "Congratulations! " 
       {
         status: 200,
         headers: {
