@@ -31,10 +31,16 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "claude-3-sonnet-20240229",
   "claude-3-haiku-20240307",
   "claude-3-5-haiku-20241022",
+  
   // GoogleAI
   "gemini-1.0-pro",
   "gemini-1.5-pro",
   "gemini-1.5-flash",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.5-flash-preview-05-20",
+  "gemini-2.5-flash-preview-04-17",
+  "gemini-2.5-pro-preview-05-06",
   // MistralAI
   "mistral-large-latest",
   "mistral-small-latest",
