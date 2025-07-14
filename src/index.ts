@@ -52,7 +52,7 @@ export default {
 function handleRootEndpoint(request: Request): Response {
   if (request.method === 'GET') {
     return new Response(
-      "Congratulations! Your API is working! You can now make requests to the API.\n\nEndpoint: " +
+      "Congratulations!  " +
       new URL(request.url).origin + "/v1",
       {
         status: 200,
