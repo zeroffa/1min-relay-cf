@@ -31,7 +31,9 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "claude-3-sonnet-20240229",
   "claude-3-haiku-20240307",
   "claude-3-5-haiku-20241022",
-  
+  "claude-3-7-sonnet-20250219",
+  "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
   // GoogleAI
   "gemini-1.0-pro",
   "gemini-1.5-pro",
@@ -60,6 +62,11 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "command",
   // xAI
   "grok-2",
+  // Perplexity Sonar
+  "sonar-reasoning-pro",
+  "sonar-reasoning",
+  "sonar-pro",
+  "sonar",
   // Leonardo.ai models
   "phoenix",       // Leonardo.ai artistic model
   "lightning-xl",  // Leonardo.ai fast generation
