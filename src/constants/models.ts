@@ -96,6 +96,8 @@ export const CODE_INTERPRETER_SUPPORTED_MODELS = [
   "gpt-4o",
   "claude-3-5-sonnet-20240620",
   "claude-3-5-haiku-20241022",
+  "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
   "deepseek-chat",
   "deepseek-reasoner"
 ];
@@ -117,6 +119,8 @@ export const RETRIEVAL_SUPPORTED_MODELS = [
   "claude-3-sonnet-20240229",
   "claude-3-haiku-20240307",
   "claude-3-5-haiku-20241022",
+  "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
   "mistral-large-latest",
   "mistral-small-latest",
   "mistral-nemo",

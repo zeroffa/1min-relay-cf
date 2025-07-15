@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.7.0] - 2025-07-15
+### Added
+- New Claude models support:
+  - `claude-sonnet-4-20250514`
+  - `claude-opus-4-20250514`
+
 ## [2.6.0] - 2025-07-05
 ### Added
 - New Gemini models support:
