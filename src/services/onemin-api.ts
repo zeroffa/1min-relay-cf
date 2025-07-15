@@ -2,11 +2,8 @@
  * 1min.ai API service layer
  */
 
-import { Env, OneMinResponse, OneMinImageResponse } from '../types';
-import { API_ENDPOINTS } from '../constants';
-import { createErrorResponse } from '../utils';
-import { processImageUrl, uploadImageToAsset } from '../utils/image';
-import { generateUUID } from '../utils';
+import { Env, OneMinImageResponse } from '../types';
+import { processImageUrl, uploadImageToAsset, isVisionSupportedModel } from '../utils/image';
 
 // Helper function to extract text content from message content (string or array)
 function extractTextFromContent(content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>): string {
@@ -111,24 +108,33 @@ export class OneMinApiService {
   async buildChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
-    let hasImages = false;
+    let hasImageRequests = false;
+    let allImagesUploaded = true;
 
+    // Process messages to extract images and check for vision support
     for (const message of messages || []) {
       if (Array.isArray(message.content)) {
         for (const item of message.content) {
           if (item.type === 'image_url' && item.image_url?.url) {
-            hasImages = true;
+            hasImageRequests = true;
+
+            // Check if model supports vision inputs
+            if (!isVisionSupportedModel(model)) {
+              throw new Error(`Model '${model}' does not support image inputs`);
+            }
 
             try {
               // Process and upload image
+              console.log('Processing image URL:', item.image_url.url.substring(0, 50) + '...');
               const imageData = await processImageUrl(item.image_url.url);
+              console.log('Image data processed, size:', imageData.byteLength);
               const imagePath = await uploadImageToAsset(imageData, apiKey, this.env.ONE_MIN_ASSET_URL);
-              if (imagePath) {
-                imagePaths.push(imagePath);
-              }
+              console.log('Image uploaded successfully, path:', imagePath);
+              imagePaths.push(imagePath);
             } catch (error) {
               console.error('Error processing image:', error);
-              // Continue processing other images even if one fails
+              allImagesUploaded = false;
+              // Continue processing other images
             }
           }
         }
@@ -138,8 +144,15 @@ export class OneMinApiService {
     // Format messages for the API call
     const formattedHistory = formatConversationHistory(messages, "");
 
-    // Prepare request to 1min.ai API - use different type for images
-    if (hasImages && imagePaths.length > 0) {
+    console.log('Image processing summary:', {
+      hasImageRequests,
+      allImagesUploaded,
+      imagePathsCount: imagePaths.length,
+      requestType: hasImageRequests && allImagesUploaded && imagePaths.length > 0 ? 'CHAT_WITH_IMAGE' : 'CHAT_WITH_AI'
+    });
+
+    // Only use CHAT_WITH_IMAGE if we have image requests AND all images were successfully uploaded
+    if (hasImageRequests && allImagesUploaded && imagePaths.length > 0) {
       return {
         type: "CHAT_WITH_IMAGE",
         model: model,
@@ -162,18 +175,34 @@ export class OneMinApiService {
     }
   }
 
-  buildStreamingChatRequestBody(messages: any[], model: string, temperature?: number, maxTokens?: number): any {
+  async buildStreamingChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
-    let hasImages = false;
+    let hasImageRequests = false;
+    let allImagesUploaded = true;
 
+    // Process messages to extract images and check for vision support
     for (const message of messages || []) {
       if (Array.isArray(message.content)) {
         for (const item of message.content) {
           if (item.type === 'image_url' && item.image_url?.url) {
-            hasImages = true;
-            // Note: Image processing would need to be implemented here
-            // For now, we'll just mark that images are present
+            hasImageRequests = true;
+
+            // Check if model supports vision inputs
+            if (!isVisionSupportedModel(model)) {
+              throw new Error(`Model '${model}' does not support image inputs`);
+            }
+
+            try {
+              // Process and upload image
+              const imageData = await processImageUrl(item.image_url.url);
+              const imagePath = await uploadImageToAsset(imageData, apiKey, this.env.ONE_MIN_ASSET_URL);
+              imagePaths.push(imagePath);
+            } catch (error) {
+              console.error('Error processing image:', error);
+              allImagesUploaded = false;
+              // Continue processing other images
+            }
           }
         }
       }
@@ -182,17 +211,28 @@ export class OneMinApiService {
     // Format messages for the API call
     const formattedHistory = formatConversationHistory(messages, "");
 
-    // Prepare request to 1min.ai API
-    return {
-      type: "CHAT_WITH_AI",
-      model: model,
-      promptObject: {
-        prompt: formattedHistory,
-        isMixed: hasImages,
-        webSearch: false,
-        ...(hasImages && imagePaths.length > 0 && { imagePaths })
-      }
-    };
+    // Only use CHAT_WITH_IMAGE if we have image requests AND all images were successfully uploaded
+    if (hasImageRequests && allImagesUploaded && imagePaths.length > 0) {
+      return {
+        type: "CHAT_WITH_IMAGE",
+        model: model,
+        promptObject: {
+          prompt: formattedHistory,
+          isMixed: false,
+          imageList: imagePaths
+        }
+      };
+    } else {
+      return {
+        type: "CHAT_WITH_AI",
+        model: model,
+        promptObject: {
+          prompt: formattedHistory,
+          isMixed: false,
+          webSearch: false
+        }
+      };
+    }
   }
 
   buildImageRequestBody(prompt: string, model: string, n?: number, size?: string): any {
