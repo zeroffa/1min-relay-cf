@@ -5,14 +5,16 @@
 // Define available models (synced with utils/constants.py)
 export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   // OpenAI
-  "gpt-o1-pro",
-  "gpt-o4-mini",
+  "o1-pro",
+  "o1-preview",
+  "o1",
+  "o1-mini",
+  "o3-mini",
+  "o4-mini",
+  "gpt-4.5-preview",
   "gpt-4.1",
   "gpt-4.1-nano",
   "gpt-4.1-mini",
-  "o3-mini",
-  "o1-preview",
-  "o1-mini",
   "gpt-4o-mini",
   "gpt-4o",
   "gpt-4-turbo",
@@ -26,11 +28,12 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   // Claude
   "claude-instant-1.2",
   "claude-2.1",
-  "claude-3-5-sonnet-20240620",
   "claude-3-opus-20240229",
   "claude-3-sonnet-20240229",
   "claude-3-haiku-20240307",
+  "claude-3-5-sonnet-20240620",
   "claude-3-5-haiku-20241022",
+  "claude-3-7-sonnet-20250219",
   "claude-sonnet-4-20250514",
   "claude-opus-4-20250514",
   // GoogleAI
@@ -54,6 +57,8 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "meta/llama-2-70b-chat",
   "meta/meta-llama-3-70b-instruct",
   "meta/meta-llama-3.1-405b-instruct",
+  "meta/llama-4-maverick-instruct",
+  "meta/llama-4-scout-instruct",
   // DeepSeek
   "deepseek-chat",
   "deepseek-reasoner",
