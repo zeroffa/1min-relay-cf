@@ -12,7 +12,7 @@ export interface OneMinResponse {
 
 export interface OneMinImageResponse {
   aiRecord: {
-    temporaryUrl: string;
+    temporaryUrl?: string;
     aiRecordDetail: {
       resultObject: string[];
     };

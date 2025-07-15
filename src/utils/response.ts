@@ -4,12 +4,13 @@
 
 import { CORS_HEADERS } from '../constants';
 
-export function createErrorResponse(message: string, status: number = 400): Response {
+export function createErrorResponse(message: string, status: number = 400, errorType: string = 'invalid_request_error', errorCode: string | null = null): Response {
   return new Response(JSON.stringify({
     error: {
       message,
-      type: 'invalid_request_error',
-      code: null
+      type: errorType,
+      param: null,
+      code: errorCode
     }
   }), {
     status,

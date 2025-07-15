@@ -4,7 +4,7 @@
 
 import { Env, ChatCompletionRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { calculateTokens, generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
+import { generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
 import { extractImageFromContent, isVisionSupportedModel } from '../utils/image';
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants';
 
@@ -39,13 +39,13 @@ export class ChatHandler {
 
       // Validate model
       if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(model)) {
-        return createErrorResponse(`Model '${model}' is not supported`);
+        return createErrorResponse(`The model '${model}' does not exist`, 400, 'invalid_request_error', 'model_not_found');
       }
 
       // Check for images and validate vision model support
       const hasImages = this.checkForImages(requestBody.messages);
       if (hasImages && !isVisionSupportedModel(model)) {
-        return createErrorResponse(`Model '${model}' does not support vision inputs. Please use a vision-supported model like gpt-4o, gpt-4o-mini, or gpt-4-turbo.`, 400);
+        return createErrorResponse(`Model '${model}' does not support image inputs`, 400, 'invalid_request_error', 'model_not_supported');
       }
 
       // Process messages and extract images if any

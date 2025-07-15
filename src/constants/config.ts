@@ -10,7 +10,8 @@ export const RATE_LIMIT_CONFIG = {
 };
 
 // Default model configuration
-export const DEFAULT_MODEL = "gpt-3.5-turbo";
+export const DEFAULT_MODEL = "mistral-nemo";
+export const DEFAULT_IMAGE_MODEL = "flux-schnell";
 
 // CORS configuration
 export const CORS_HEADERS = {

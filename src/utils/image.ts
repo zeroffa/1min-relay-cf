@@ -44,8 +44,22 @@ export function extractImageFromContent(content: any): string | null {
  * @returns Promise<ArrayBuffer> - Binary image data
  */
 export async function processImageUrl(imageUrl: string): Promise<ArrayBuffer> {
-  if (imageUrl.startsWith('data:image/')) {
-    // Handle base64 encoded image
+  if (imageUrl.startsWith('data:image/png;base64,')) {
+    // Handle base64 encoded image (matching Python logic exactly)
+    const base64Data = imageUrl.split(',')[1];
+    if (!base64Data) {
+      throw new Error('Invalid base64 image format');
+    }
+
+    // Convert base64 to binary (matching Python's base64.b64decode)
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } else if (imageUrl.startsWith('data:image/')) {
+    // Handle other base64 image formats
     const base64Data = imageUrl.split(',')[1];
     if (!base64Data) {
       throw new Error('Invalid base64 image format');
@@ -59,10 +73,10 @@ export async function processImageUrl(imageUrl: string): Promise<ArrayBuffer> {
     }
     return bytes.buffer;
   } else {
-    // Handle HTTP URL
+    // Handle HTTP URL (matching Python logic: requests.get().content)
     const response = await fetch(imageUrl);
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
     }
     return await response.arrayBuffer();
   }
@@ -95,11 +109,17 @@ export async function uploadImageToAsset(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to upload image: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to upload image: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const result = await response.json() as { fileContent?: { path: string } };
-  return result.fileContent?.path;
+
+  if (!result.fileContent?.path) {
+    throw new Error('No image path returned from asset API');
+  }
+
+  return result.fileContent.path;
 }
 
 /**

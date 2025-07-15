@@ -4,8 +4,8 @@
 
 import { Env, ImageGenerationRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
-import { IMAGE_GENERATION_MODELS, DEFAULT_MODEL } from '../constants';
+import { createErrorResponse, createSuccessResponse } from '../utils';
+import { IMAGE_GENERATION_MODELS, DEFAULT_IMAGE_MODEL } from '../constants';
 
 export class ImageHandler {
   private env: Env;
@@ -19,18 +19,18 @@ export class ImageHandler {
   async handleImageGeneration(request: Request, apiKey?: string): Promise<Response> {
     try {
       const requestBody: ImageGenerationRequest = await request.json();
-      
+
       // Validate required fields
       if (!requestBody.prompt) {
         return createErrorResponse('Prompt field is required');
       }
 
-      // Set default model if not provided
-      const model = requestBody.model || 'dall-e-3';
-      
+      // Set default model if not provided (matching Python version)
+      const model = requestBody.model || DEFAULT_IMAGE_MODEL;
+
       // Validate model supports image generation
       if (!IMAGE_GENERATION_MODELS.includes(model)) {
-        return createErrorResponse(`Model '${model}' does not support image generation`);
+        return createErrorResponse(`Model '${model}' does not support image generation`, 400, 'invalid_request_error', 'model_not_supported');
       }
 
       const requestBodyForAPI = this.apiService.buildImageRequestBody(
@@ -42,7 +42,7 @@ export class ImageHandler {
 
       try {
         const data = await this.apiService.sendImageRequest(requestBodyForAPI, apiKey);
-        
+
         // Transform response to OpenAI format
         const openAIResponse = this.transformToOpenAIFormat(data, requestBody);
         return createSuccessResponse(openAIResponse);
@@ -57,19 +57,16 @@ export class ImageHandler {
   }
 
   private transformToOpenAIFormat(data: any, originalRequest: ImageGenerationRequest): any {
-    // Use temporaryUrl from the API response (as per memory)
-    const imageUrl = data.aiRecord?.temporaryUrl;
-    
-    if (!imageUrl) {
-      throw new Error('No image URL found in API response');
+    // Use resultObject from the API response (matching Python version)
+    const imageUrls = data.aiRecord?.aiRecordDetail?.resultObject;
+
+    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+      throw new Error('No image URLs found in API response');
     }
 
     return {
       created: Math.floor(Date.now() / 1000),
-      data: [{
-        url: imageUrl,
-        revised_prompt: originalRequest.prompt
-      }]
+      data: imageUrls.map(url => ({ url }))
     };
   }
 }
