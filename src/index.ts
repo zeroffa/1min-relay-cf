@@ -8,7 +8,7 @@ import { API_ENDPOINTS } from './constants';
 import { calculateTokens, createErrorResponse } from './utils';
 import { extractTextFromContent } from './utils/image';
 import { handleCors, RateLimiter } from './middleware';
-import { handleModelsEndpoint, ChatHandler, ImageHandler } from './handlers';
+import { handleModelsEndpoint, ChatHandler, ResponseHandler, ImageHandler } from './handlers';
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -36,6 +36,9 @@ export default {
         case API_ENDPOINTS.CHAT_COMPLETIONS:
           return await handleChatCompletionsWithRateLimit(request, env, rateLimiter);
 
+        case API_ENDPOINTS.RESPONSES:
+          return await handleResponsesWithRateLimit(request, env, rateLimiter);
+
         case API_ENDPOINTS.IMAGES_GENERATIONS:
           return await handleImageGenerationWithRateLimit(request, env, rateLimiter);
 
@@ -52,8 +55,12 @@ export default {
 function handleRootEndpoint(request: Request): Response {
   if (request.method === 'GET') {
     return new Response(
-      "Congratulations! Your API is working! You can now make requests to the API.\n\nEndpoint: " +
-      new URL(request.url).origin + "/v1",
+      "Congratulations! Your API is working! You can now make requests to the API.\n\n" +
+      "Available endpoints:\n" +
+      "- Chat Completions: " + new URL(request.url).origin + "/v1/chat/completions\n" +
+      "- Responses: " + new URL(request.url).origin + "/v1/responses\n" +
+      "- Image Generation: " + new URL(request.url).origin + "/v1/images/generations\n" +
+      "- Models: " + new URL(request.url).origin + "/v1/models",
       {
         status: 200,
         headers: {
@@ -107,6 +114,48 @@ async function handleChatCompletionsWithRateLimit(
   } catch (error) {
     console.error('Chat completions error:', error);
     return createErrorResponse('Failed to process chat completion', 500);
+  }
+}
+
+async function handleResponsesWithRateLimit(
+  request: Request,
+  env: Env,
+  rateLimiter: RateLimiter
+): Promise<Response> {
+  try {
+    // Extract and validate API key
+    const apiKey = request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+    if (!apiKey) {
+      return createErrorResponse('API key is required', 401);
+    }
+
+    // Parse request to calculate tokens for rate limiting
+    const requestBody: any = await request.json();
+    const messageText = requestBody.messages
+      ?.map((msg: any) => {
+        if (typeof msg.content === 'string') {
+          return msg.content;
+        } else if (Array.isArray(msg.content)) {
+          // For mixed content (text + images), only count text tokens
+          return extractTextFromContent(msg.content);
+        }
+        return '';
+      })
+      .join(' ') || '';
+    const tokenCount = calculateTokens(messageText, requestBody.model);
+
+    // Check rate limit
+    const rateLimitResult = await rateLimiter.middleware(request, tokenCount);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResult.response!;
+    }
+
+    // Pass the parsed body and API key to the handler
+    const responseHandler = new ResponseHandler(env);
+    return await responseHandler.handleResponsesWithBody(requestBody, apiKey);
+  } catch (error) {
+    console.error('Responses error:', error);
+    return createErrorResponse('Failed to process response', 500);
   }
 }
 
