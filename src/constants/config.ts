@@ -24,6 +24,7 @@ export const CORS_HEADERS = {
 // API endpoints
 export const API_ENDPOINTS = {
   CHAT_COMPLETIONS: '/v1/chat/completions',
+  RESPONSES: '/v1/responses',
   IMAGES_GENERATIONS: '/v1/images/generations',
   MODELS: '/v1/models',
 } as const;

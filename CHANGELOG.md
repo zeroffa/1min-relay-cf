@@ -15,6 +15,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.9.0] - 2025-01-27
+### Added
+- **OpenAI Responses API** support (`/v1/responses`)
+  - Structured output support with JSON objects and JSON schema validation
+  - Reasoning effort control (low, medium, high)
+  - Enhanced prompting for structured responses
+  - Vision support with image inputs (same as Chat Completions)
+  - Rate limiting and API key validation
+- New `ResponseRequest` interface for Responses API
+- `ResponseHandler` class for handling structured outputs and reasoning requests
+- Enhanced system prompting based on response format and reasoning effort
+- JSON parsing and validation for structured responses
+
+### Changed
+- Updated root endpoint to display all available API endpoints
+- Enhanced API documentation with Responses API examples
+- Improved error handling for structured response parsing
+
+### Technical
+- Added `src/handlers/responses.ts` - Main Responses API handler
+- Updated `src/constants/config.ts` - Added RESPONSES endpoint constant
+- Updated `src/types/requests.ts` - Added ResponseRequest interface
+- Updated `src/index.ts` - Added routing and rate limiting for responses endpoint
+- Updated `src/handlers/index.ts` - Exported ResponseHandler
+- Created comprehensive testing documentation for both APIs
+
 ## [2.8.0] - 2025-01-27
 ### Changed
 - Replaced custom UUID generation with native Cloudflare Workers Web Crypto API
