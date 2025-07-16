@@ -2,7 +2,6 @@
  * Image processing utilities
  */
 
-import { generateUUID } from './uuid';
 
 /**
  * Checks if URL is an image URL
@@ -95,7 +94,7 @@ export async function uploadImageToAsset(
   assetUrl: string
 ): Promise<string> {
   const formData = new FormData();
-  const filename = `relay${generateUUID()}`;
+  const filename = `relay${crypto.randomUUID()}`;
   const blob = new Blob([imageData], { type: 'image/png' });
 
   formData.append('asset', blob, filename);
