@@ -24,7 +24,7 @@
     "@types/node": "^24.0.10",
     "@types/service-worker-mock": "^2.0.4",
     "typescript": "^5.8.3",
-    "wrangler": "^4.22.0"
+    "wrangler": "^4.24.3"
   },
   "dependencies": {
     "gpt-tokenizer": "^3.0.1"
