@@ -4,7 +4,7 @@
 
 import { Env, ChatCompletionRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
+import { createErrorResponse, createSuccessResponse } from '../utils';
 import { extractImageFromContent, isVisionSupportedModel } from '../utils/image';
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants';
 
@@ -167,7 +167,7 @@ export class ChatHandler {
 
             // Format chunk as OpenAI SSE
             const returnChunk = {
-              id: `chatcmpl-${generateUUID()}`,
+              id: `chatcmpl-${crypto.randomUUID()}`,
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
               model: model,
@@ -187,7 +187,7 @@ export class ChatHandler {
 
           // Send final chunk
           const finalChunk = {
-            id: `chatcmpl-${generateUUID()}`,
+            id: `chatcmpl-${crypto.randomUUID()}`,
             object: "chat.completion.chunk",
             created: Math.floor(Date.now() / 1000),
             model: model,
@@ -227,7 +227,7 @@ export class ChatHandler {
 
   private transformToOpenAIFormat(data: any, model: string): any {
     return {
-      id: `chatcmpl-${generateUUID()}`,
+      id: `chatcmpl-${crypto.randomUUID()}`,
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
       model: model,
@@ -249,7 +249,7 @@ export class ChatHandler {
 
   private transformStreamChunkToOpenAI(data: any, model: string): any {
     return {
-      id: `chatcmpl-${generateUUID()}`,
+      id: `chatcmpl-${crypto.randomUUID()}`,
       object: 'chat.completion.chunk',
       created: Math.floor(Date.now() / 1000),
       model: model,

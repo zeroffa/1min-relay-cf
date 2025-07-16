@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.8.0] - 2025-01-27
+### Changed
+- Replaced custom UUID generation with native Cloudflare Workers Web Crypto API
+- Removed `generateUUID()` wrapper function in favor of direct `crypto.randomUUID()` usage
+- Simplified codebase by eliminating unnecessary UUID utility file
+
+### Technical
+- Deleted `src/utils/uuid.ts` file
+- Updated all UUID generation calls to use `crypto.randomUUID()` directly
+- Improved performance and security with native cryptographic UUID generation
+
 ## [2.7.0] - 2025-07-15
 ### Added
 - New Claude models support:
