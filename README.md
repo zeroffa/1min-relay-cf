@@ -5,7 +5,8 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 
 ## Features
 
-- **Complete API Relay**: Full compatibility with 1min.ai chat completions and image generation endpoints
+- **Complete API Relay**: Full compatibility with 1min.ai chat completions, responses, and image generation endpoints
+- **OpenAI Responses API**: Structured outputs with JSON objects, JSON schema, and reasoning effort control
 - **Distributed Rate Limiting**: Uses Cloudflare KV for consistent rate limiting across multiple worker instances
 - **Accurate Token Counting**: Integrated with `gpt-tokenizer` for precise token calculation across all models
 - **60+ AI Models**: Supports all latest models including GPT-4o, Claude 3.5, Mistral, Flux, Leonardo.ai, and more
@@ -46,6 +47,11 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 POST /v1/chat/completions
 ```
 
+### Responses (Structured Outputs)
+```
+POST /v1/responses
+```
+
 #### Vision Support Example
 ```bash
 curl -X POST http://localhost:8787/v1/chat/completions \
@@ -73,6 +79,90 @@ curl -X POST http://localhost:8787/v1/chat/completions \
   }'
 ```
 
+#### Responses API Examples
+
+The Responses API supports structured outputs and reasoning control. It accepts two input formats:
+
+**Simple Input Format:**
+```bash
+curl -X POST http://localhost:8787/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gpt-4.1",
+    "input": "Tell me a three sentence bedtime story about a unicorn.",
+    "reasoning_effort": "medium"
+  }'
+```
+
+**Messages Format (for conversations):**
+```bash
+curl -X POST http://localhost:8787/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gpt-4.1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Analyze the pros and cons of remote work"
+      }
+    ],
+    "reasoning_effort": "high"
+  }'
+```
+
+**JSON Object Response:**
+```bash
+curl -X POST http://localhost:8787/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gpt-4.1",
+    "input": "Analyze the benefits of exercise",
+    "response_format": {
+      "type": "json_object"
+    },
+    "reasoning_effort": "high"
+  }'
+```
+
+**JSON Schema Response:**
+```bash
+curl -X POST http://localhost:8787/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gpt-4.1",
+    "input": "Create a user profile for John Doe, age 30, software engineer",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "user_profile",
+        "description": "A user profile object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "age": {"type": "number"},
+            "profession": {"type": "string"},
+            "skills": {"type": "array", "items": {"type": "string"}},
+            "experience_years": {"type": "number"}
+          },
+          "required": ["name", "age", "profession"]
+        }
+      }
+    }
+  }'
+```
+
+**Responses API Features:**
+- **Structured Outputs**: JSON objects and JSON schema validation
+- **Reasoning Effort**: Control reasoning depth (low, medium, high)
+- **Vision Support**: Same image input capabilities as Chat Completions
+- **No Streaming**: Responses API returns complete responses only
+- **Enhanced Prompting**: Automatically optimizes prompts for structured responses
+
 ### Image Generation
 ```
 POST /v1/images/generations
@@ -87,6 +177,12 @@ GET /v1/models
 ```
 GET /
 ```
+
+Returns information about all available endpoints:
+- Chat Completions: `/v1/chat/completions`
+- Responses: `/v1/responses`
+- Image Generation: `/v1/images/generations`
+- Models: `/v1/models`
 
 ## Rate Limiting
 
@@ -221,6 +317,21 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/v1/chat/completions 
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": false
+  }'
+```
+
+### Responses (Structured Output)
+```bash
+curl -X POST https://your-worker.your-subdomain.workers.dev/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-key" \
+  -d '{
+    "model": "gpt-4.1",
+    "input": "Analyze the benefits of renewable energy",
+    "response_format": {
+      "type": "json_object"
+    },
+    "reasoning_effort": "high"
   }'
 ```
 
