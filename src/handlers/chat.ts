@@ -4,7 +4,7 @@
 
 import { Env, ChatCompletionRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { calculateTokens, generateUUID, createErrorResponse, createSuccessResponse } from '../utils';
+import { createErrorResponse, createSuccessResponse } from '../utils';
 import { extractImageFromContent, isVisionSupportedModel } from '../utils/image';
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants';
 
@@ -39,13 +39,13 @@ export class ChatHandler {
 
       // Validate model
       if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(model)) {
-        return createErrorResponse(`Model '${model}' is not supported`);
+        return createErrorResponse(`The model '${model}' does not exist`, 400, 'invalid_request_error', 'model_not_found');
       }
 
       // Check for images and validate vision model support
       const hasImages = this.checkForImages(requestBody.messages);
       if (hasImages && !isVisionSupportedModel(model)) {
-        return createErrorResponse(`Model '${model}' does not support vision inputs. Please use a vision-supported model like gpt-4o, gpt-4o-mini, or gpt-4-turbo.`, 400);
+        return createErrorResponse(`Model '${model}' does not support image inputs`, 400, 'invalid_request_error', 'model_not_supported');
       }
 
       // Process messages and extract images if any
@@ -167,7 +167,7 @@ export class ChatHandler {
 
             // Format chunk as OpenAI SSE
             const returnChunk = {
-              id: `chatcmpl-${generateUUID()}`,
+              id: `chatcmpl-${crypto.randomUUID()}`,
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
               model: model,
@@ -187,7 +187,7 @@ export class ChatHandler {
 
           // Send final chunk
           const finalChunk = {
-            id: `chatcmpl-${generateUUID()}`,
+            id: `chatcmpl-${crypto.randomUUID()}`,
             object: "chat.completion.chunk",
             created: Math.floor(Date.now() / 1000),
             model: model,
@@ -227,7 +227,7 @@ export class ChatHandler {
 
   private transformToOpenAIFormat(data: any, model: string): any {
     return {
-      id: `chatcmpl-${generateUUID()}`,
+      id: `chatcmpl-${crypto.randomUUID()}`,
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
       model: model,
@@ -249,7 +249,7 @@ export class ChatHandler {
 
   private transformStreamChunkToOpenAI(data: any, model: string): any {
     return {
-      id: `chatcmpl-${generateUUID()}`,
+      id: `chatcmpl-${crypto.randomUUID()}`,
       object: 'chat.completion.chunk',
       created: Math.floor(Date.now() / 1000),
       model: model,
