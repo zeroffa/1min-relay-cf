@@ -10,7 +10,8 @@ export const RATE_LIMIT_CONFIG = {
 };
 
 // Default model configuration
-export const DEFAULT_MODEL = "gpt-4.1-nano";
+export const DEFAULT_MODEL = "mistral-nemo";
+export const DEFAULT_IMAGE_MODEL = "flux-schnell";
 
 // CORS configuration
 export const CORS_HEADERS = {
@@ -23,6 +24,7 @@ export const CORS_HEADERS = {
 // API endpoints
 export const API_ENDPOINTS = {
   CHAT_COMPLETIONS: '/v1/chat/completions',
+  RESPONSES: '/v1/responses',
   IMAGES_GENERATIONS: '/v1/images/generations',
   MODELS: '/v1/models',
 } as const;
