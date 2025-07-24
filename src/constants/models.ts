@@ -185,6 +185,7 @@ export const VARIATION_SUPPORTED_MODELS = [
   "midjourney",
   "midjourney_6_1",
   "dall-e-2",
+  "dall-e-3",
   "clipdrop"
 ];
 
