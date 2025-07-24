@@ -15,6 +15,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.11.0] - 2025-07-24
+### Added
+- **Web Search Integration with `:online` Model Suffix**
+  - Add `:online` suffix to any supported model name to enable web search functionality
+  - Example usage: `gpt-4o:online`, `claude-3-5-sonnet-20240620:online`
+  - Real-time information retrieval with search results integrated into AI responses
+  - Supported on both `/v1/chat/completions` and `/v1/responses` endpoints
+  - Full streaming support for web search enabled requests
+- **Web Search Configuration Options**
+  - `WEB_SEARCH_NUM_OF_SITE` environment variable (default: 1)
+  - `WEB_SEARCH_MAX_WORD` environment variable (default: 500)
+- **Graceful Degradation System**
+  - Automatic fallback to standard mode when API doesn't support webSearch parameters
+  - `X-WebSearch-Degraded` response header to indicate when degradation occurred
+  - Enhanced error logging for monitoring and debugging
+
+### Changed
+- Enhanced `OneMinApiService` to support webSearch parameters in both chat and streaming requests
+- Updated `ChatHandler` and `ResponseHandler` to integrate model name parsing
+- Improved error handling with detailed validation messages for invalid model formats
+
+### Technical
+- Added `src/utils/model-parser.ts` - ModelParser class for parsing `:online` suffix and validation
+- Updated `src/services/onemin-api.ts` - Added webSearch parameter support and graceful degradation
+- Updated `src/handlers/chat.ts` - Integrated model parsing for chat completions
+- Updated `src/handlers/responses.ts` - Integrated model parsing for structured responses
+- Updated `src/types/env.ts` - Added optional web search configuration environment variables
+- Enhanced error handling with automatic retry logic for unsupported webSearch parameters
+
 ## [2.10.0] - 2025-07-24
 ### Added
 - New OpenAI models support:
