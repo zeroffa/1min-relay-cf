@@ -15,6 +15,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixes to be released
 
+## [2.10.0] - 2025-07-24
+### Added
+- New OpenAI models support:
+  - `o3-mini`
+  - `o4-mini`
+  - `gpt-4.5-preview`
+  - `gpt-4.1`
+  - `gpt-4.1-nano`
+  - `gpt-4.1-mini`
+- New Claude models support:
+  - `claude-3-5-haiku-20241022`
+  - `claude-3-7-sonnet-20250219`
+- New Gemini models support:
+  - `gemini-2.0-flash`
+  - `gemini-2.0-flash-lite`
+  - `gemini-2.5-flash`
+  - `gemini-2.5-pro`
+  - `gemini-2.5-flash-preview-05-20`
+  - `gemini-2.5-pro-preview-05-06`
+- New Meta models support:
+  - `meta/meta-llama-3.1-405b-instruct`
+  - `meta/llama-4-maverick-instruct`
+  - `meta/llama-4-scout-instruct`
+- New DeepSeek models support:
+  - `deepseek-chat`
+  - `deepseek-reasoner`
+- New Perplexity Sonar models support:
+  - `sonar-reasoning-pro`
+  - `sonar-reasoning`
+  - `sonar-pro`
+  - `sonar`
+- New Flux model support:
+  - `flux-1.1-pro`
+- New Midjourney model support:
+  - `midjourney_6_1`
+
 ## [2.9.0] - 2025-01-27
 ### Added
 - **OpenAI Responses API** support (`/v1/responses`)

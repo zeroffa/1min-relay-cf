@@ -42,6 +42,8 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "gemini-1.5-flash",
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
   "gemini-2.5-flash-preview-05-20",
   "gemini-2.5-flash-preview-04-17",
   "gemini-2.5-pro-preview-05-06",
@@ -112,9 +114,14 @@ export const RETRIEVAL_SUPPORTED_MODELS = [
   "gemini-1.0-pro",
   "gemini-1.5-pro",
   "gemini-1.5-flash",
-  "o3-mini",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
   "o1-preview",
   "o1-mini",
+  "o3-mini",
+  "o4-mini",
   "gpt-4o-mini",
   "gpt-4o",
   "gpt-4-turbo",
@@ -139,7 +146,11 @@ export const RETRIEVAL_SUPPORTED_MODELS = [
   "command",
   "grok-2",
   "deepseek-chat",
-  "deepseek-reasoner"
+  "deepseek-reasoner",
+  "sonar-reasoning-pro",
+  "sonar-reasoning",
+  "sonar-pro",
+  "sonar"
 ];
 
 // Define models that support function calling
