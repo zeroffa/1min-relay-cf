@@ -5,3 +5,4 @@
 export * from './tokens';
 export * from './image';
 export * from './response';
+export * from './model-parser';

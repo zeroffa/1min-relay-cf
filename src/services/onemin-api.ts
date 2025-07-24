@@ -4,6 +4,7 @@
 
 import { Env, OneMinImageResponse } from '../types';
 import { processImageUrl, uploadImageToAsset, isVisionSupportedModel } from '../utils/image';
+import { WebSearchConfig } from '../utils/model-parser';
 
 // Helper function to extract text content from message content (string or array)
 function extractTextFromContent(content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>): string {
@@ -68,17 +69,67 @@ export class OneMinApiService {
       headers['API-KEY'] = apiKey;
     }
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody)
-    });
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
 
-    if (!response.ok) {
-      throw new Error(`1min.ai API error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        // Log the error for monitoring
+        console.error(`1min.ai API error: ${response.status} ${response.statusText}`, {
+          url: apiUrl,
+          hasWebSearch: requestBody.promptObject?.webSearch,
+          model: requestBody.model
+        });
+
+        // If the error might be related to webSearch parameters, try graceful degradation
+        if (response.status === 400 && requestBody.promptObject?.webSearch) {
+          console.warn('Attempting graceful degradation: removing webSearch parameters');
+          const fallbackRequestBody = this.createFallbackRequestBody(requestBody);
+          
+          const fallbackResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(fallbackRequestBody)
+          });
+
+          if (fallbackResponse.ok) {
+            console.log('Graceful degradation successful');
+            // Add header to indicate degradation occurred
+            const responseHeaders = new Headers(fallbackResponse.headers);
+            responseHeaders.set('X-WebSearch-Degraded', 'true');
+            
+            return new Response(fallbackResponse.body, {
+              status: fallbackResponse.status,
+              statusText: fallbackResponse.statusText,
+              headers: responseHeaders
+            });
+          }
+        }
+
+        throw new Error(`1min.ai API error: ${response.status} ${response.statusText}`);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Network error in sendChatRequest:', error);
+      throw error;
     }
+  }
 
-    return response;
+  private createFallbackRequestBody(originalRequestBody: any): any {
+    const fallbackBody = JSON.parse(JSON.stringify(originalRequestBody));
+    
+    // Remove webSearch related parameters
+    if (fallbackBody.promptObject) {
+      delete fallbackBody.promptObject.webSearch;
+      delete fallbackBody.promptObject.numOfSite;
+      delete fallbackBody.promptObject.maxWord;
+    }
+    
+    return fallbackBody;
   }
 
   async sendImageRequest(requestBody: any, apiKey?: string): Promise<OneMinImageResponse> {
@@ -105,7 +156,7 @@ export class OneMinApiService {
     return data as OneMinImageResponse;
   }
 
-  async buildChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number): Promise<any> {
+  async buildChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number, webSearchConfig?: WebSearchConfig): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
     let hasImageRequests = false;
@@ -153,29 +204,46 @@ export class OneMinApiService {
 
     // Only use CHAT_WITH_IMAGE if we have image requests AND all images were successfully uploaded
     if (hasImageRequests && allImagesUploaded && imagePaths.length > 0) {
+      const promptObject: any = {
+        prompt: formattedHistory,
+        isMixed: false,
+        imageList: imagePaths
+      };
+      
+      // Add web search parameters if enabled
+      if (webSearchConfig) {
+        promptObject.webSearch = webSearchConfig.webSearch;
+        promptObject.numOfSite = webSearchConfig.numOfSite;
+        promptObject.maxWord = webSearchConfig.maxWord;
+      }
+      
       return {
         type: "CHAT_WITH_IMAGE",
         model: model,
-        promptObject: {
-          prompt: formattedHistory,
-          isMixed: false,
-          imageList: imagePaths
-        }
+        promptObject
       };
     } else {
+      const promptObject: any = {
+        prompt: formattedHistory,
+        isMixed: false,
+        webSearch: webSearchConfig ? webSearchConfig.webSearch : false
+      };
+      
+      // Add web search parameters if enabled
+      if (webSearchConfig && webSearchConfig.webSearch) {
+        promptObject.numOfSite = webSearchConfig.numOfSite;
+        promptObject.maxWord = webSearchConfig.maxWord;
+      }
+      
       return {
         type: "CHAT_WITH_AI",
         model: model,
-        promptObject: {
-          prompt: formattedHistory,
-          isMixed: false,
-          webSearch: false
-        }
+        promptObject
       };
     }
   }
 
-  async buildStreamingChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number): Promise<any> {
+  async buildStreamingChatRequestBody(messages: any[], model: string, apiKey: string, temperature?: number, maxTokens?: number, webSearchConfig?: WebSearchConfig): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
     let hasImageRequests = false;
@@ -213,24 +281,41 @@ export class OneMinApiService {
 
     // Only use CHAT_WITH_IMAGE if we have image requests AND all images were successfully uploaded
     if (hasImageRequests && allImagesUploaded && imagePaths.length > 0) {
+      const promptObject: any = {
+        prompt: formattedHistory,
+        isMixed: false,
+        imageList: imagePaths
+      };
+      
+      // Add web search parameters if enabled
+      if (webSearchConfig) {
+        promptObject.webSearch = webSearchConfig.webSearch;
+        promptObject.numOfSite = webSearchConfig.numOfSite;
+        promptObject.maxWord = webSearchConfig.maxWord;
+      }
+      
       return {
         type: "CHAT_WITH_IMAGE",
         model: model,
-        promptObject: {
-          prompt: formattedHistory,
-          isMixed: false,
-          imageList: imagePaths
-        }
+        promptObject
       };
     } else {
+      const promptObject: any = {
+        prompt: formattedHistory,
+        isMixed: false,
+        webSearch: webSearchConfig ? webSearchConfig.webSearch : false
+      };
+      
+      // Add web search parameters if enabled
+      if (webSearchConfig && webSearchConfig.webSearch) {
+        promptObject.numOfSite = webSearchConfig.numOfSite;
+        promptObject.maxWord = webSearchConfig.maxWord;
+      }
+      
       return {
         type: "CHAT_WITH_AI",
         model: model,
-        promptObject: {
-          prompt: formattedHistory,
-          isMixed: false,
-          webSearch: false
-        }
+        promptObject
       };
     }
   }

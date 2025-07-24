@@ -4,7 +4,7 @@
 
 import { Env, ChatCompletionRequest } from '../types';
 import { OneMinApiService } from '../services';
-import { createErrorResponse, createSuccessResponse } from '../utils';
+import { createErrorResponse, createSuccessResponse, ModelParser, WebSearchConfig } from '../utils';
 import { extractImageFromContent, isVisionSupportedModel } from '../utils/image';
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from '../constants';
 
@@ -35,17 +35,25 @@ export class ChatHandler {
       }
 
       // Set default model if not provided
-      const model = requestBody.model || DEFAULT_MODEL;
+      const rawModel = requestBody.model || DEFAULT_MODEL;
 
-      // Validate model
-      if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(model)) {
-        return createErrorResponse(`The model '${model}' does not exist`, 400, 'invalid_request_error', 'model_not_found');
+      // Parse model name and get web search configuration
+      const parseResult = this.parseAndValidateModel(rawModel);
+      if (parseResult.error) {
+        return createErrorResponse(parseResult.error, 400, 'invalid_request_error', 'model_not_found');
+      }
+
+      const { cleanModel, webSearchConfig } = parseResult;
+
+      // Validate that the clean model exists in our supported models
+      if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(cleanModel)) {
+        return createErrorResponse(`The model '${cleanModel}' does not exist`, 400, 'invalid_request_error', 'model_not_found');
       }
 
       // Check for images and validate vision model support
       const hasImages = this.checkForImages(requestBody.messages);
-      if (hasImages && !isVisionSupportedModel(model)) {
-        return createErrorResponse(`Model '${model}' does not support image inputs`, 400, 'invalid_request_error', 'model_not_supported');
+      if (hasImages && !isVisionSupportedModel(cleanModel)) {
+        return createErrorResponse(`Model '${cleanModel}' does not support image inputs`, 400, 'invalid_request_error', 'model_not_supported');
       }
 
       // Process messages and extract images if any
@@ -53,14 +61,22 @@ export class ChatHandler {
 
       // Handle streaming vs non-streaming
       if (requestBody.stream) {
-        return this.handleStreamingChat(processedMessages, model, requestBody.temperature, requestBody.max_tokens, apiKey);
+        return this.handleStreamingChat(processedMessages, cleanModel, requestBody.temperature, requestBody.max_tokens, apiKey, webSearchConfig);
       } else {
-        return this.handleNonStreamingChat(processedMessages, model, requestBody.temperature, requestBody.max_tokens, apiKey);
+        return this.handleNonStreamingChat(processedMessages, cleanModel, requestBody.temperature, requestBody.max_tokens, apiKey, webSearchConfig);
       }
     } catch (error) {
       console.error('Chat completion error:', error);
       return createErrorResponse('Internal server error', 500);
     }
+  }
+
+  private parseAndValidateModel(modelName: string): {
+    cleanModel: string;
+    webSearchConfig?: WebSearchConfig;
+    error?: string;
+  } {
+    return ModelParser.parseAndGetConfig(modelName, this.env);
   }
 
   private checkForImages(messages: any[]): boolean {
@@ -106,10 +122,11 @@ export class ChatHandler {
     model: string,
     temperature?: number,
     maxTokens?: number,
-    apiKey?: string
+    apiKey?: string,
+    webSearchConfig?: WebSearchConfig
   ): Promise<Response> {
     try {
-      const requestBody = await this.apiService.buildChatRequestBody(messages, model, apiKey || '', temperature, maxTokens);
+      const requestBody = await this.apiService.buildChatRequestBody(messages, model, apiKey || '', temperature, maxTokens, webSearchConfig);
 
       const response = await this.apiService.sendChatRequest(requestBody, false, apiKey);
       const data = await response.json();
@@ -128,10 +145,11 @@ export class ChatHandler {
     model: string,
     temperature?: number,
     maxTokens?: number,
-    apiKey?: string
+    apiKey?: string,
+    webSearchConfig?: WebSearchConfig
   ): Promise<Response> {
     try {
-      const requestBody = await this.apiService.buildChatRequestBody(messages, model, apiKey || '', temperature, maxTokens);
+      const requestBody = await this.apiService.buildStreamingChatRequestBody(messages, model, apiKey || '', temperature, maxTokens, webSearchConfig);
 
       const response = await this.apiService.sendChatRequest(requestBody, true, apiKey);
 
