@@ -21,10 +21,10 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "gpt-4",
   "gpt-3.5-turbo",
   "whisper-1", // Speech recognition
-  "tts-1",     // Text-to-speech
-  "tts-1-hd",  // Text-to-speech HD
-  "dall-e-2",  // Image generation
-  "dall-e-3",  // Image generation
+  "tts-1", // Text-to-speech
+  "tts-1-hd", // Text-to-speech HD
+  "dall-e-2", // Image generation
+  "dall-e-3", // Image generation
   // Claude
   "claude-instant-1.2",
   "claude-2.1",
@@ -74,29 +74,25 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "sonar-pro",
   "sonar",
   // Leonardo.ai models
-  "phoenix",       // Leonardo.ai artistic model
-  "lightning-xl",  // Leonardo.ai fast generation
-  "anime-xl",      // Leonardo.ai anime style
-  "diffusion-xl",  // Leonardo.ai diffusion model
-  "kino-xl",       // Leonardo.ai cinematic style
-  "vision-xl",     // Leonardo.ai vision model
-  "albedo-base-xl",// Leonardo.ai base model
+  "phoenix", // Leonardo.ai artistic model
+  "lightning-xl", // Leonardo.ai fast generation
+  "anime-xl", // Leonardo.ai anime style
+  "diffusion-xl", // Leonardo.ai diffusion model
+  "kino-xl", // Leonardo.ai cinematic style
+  "vision-xl", // Leonardo.ai vision model
+  "albedo-base-xl", // Leonardo.ai base model
   // Midjourney
-  "midjourney",    // Midjourney image generation
-  "midjourney_6_1",// Midjourney v6.1
+  "midjourney", // Midjourney image generation
+  "midjourney_6_1", // Midjourney v6.1
   // Flux models
-  "flux-schnell",  // Flux fast generation
-  "flux-dev",      // Flux development model
-  "flux-pro",      // Flux professional model
-  "flux-1.1-pro",  // Flux Pro v1.1
+  "flux-schnell", // Flux fast generation
+  "flux-dev", // Flux development model
+  "flux-pro", // Flux professional model
+  "flux-1.1-pro", // Flux Pro v1.1
 ];
 
 // Define models that support vision inputs (synced with utils/constants.py)
-export const VISION_SUPPORTED_MODELS = [
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4-turbo"
-];
+export const VISION_SUPPORTED_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"];
 
 // Define models that support code interpreter
 export const CODE_INTERPRETER_SUPPORTED_MODELS = [
@@ -106,7 +102,7 @@ export const CODE_INTERPRETER_SUPPORTED_MODELS = [
   "claude-sonnet-4-20250514",
   "claude-opus-4-20250514",
   "deepseek-chat",
-  "deepseek-reasoner"
+  "deepseek-reasoner",
 ];
 
 // Define models that support web search (retrieval)
@@ -150,14 +146,11 @@ export const RETRIEVAL_SUPPORTED_MODELS = [
   "sonar-reasoning-pro",
   "sonar-reasoning",
   "sonar-pro",
-  "sonar"
+  "sonar",
 ];
 
 // Define models that support function calling
-export const FUNCTION_CALLING_SUPPORTED_MODELS = [
-  "gpt-4",
-  "gpt-3.5-turbo"
-];
+export const FUNCTION_CALLING_SUPPORTED_MODELS = ["gpt-4", "gpt-3.5-turbo"];
 
 // Define models that support image generation (synced with utils/constants.py)
 export const IMAGE_GENERATION_MODELS = [
@@ -177,7 +170,7 @@ export const IMAGE_GENERATION_MODELS = [
   "flux-schnell",
   "flux-dev",
   "flux-pro",
-  "flux-1.1-pro"
+  "flux-1.1-pro",
 ];
 
 // Models that support image variations
@@ -186,16 +179,11 @@ export const VARIATION_SUPPORTED_MODELS = [
   "midjourney_6_1",
   "dall-e-2",
   "dall-e-3",
-  "clipdrop"
+  "clipdrop",
 ];
 
 // Text-to-speech models
-export const TEXT_TO_SPEECH_MODELS = [
-  "tts-1",
-  "tts-1-hd"
-];
+export const TEXT_TO_SPEECH_MODELS = ["tts-1", "tts-1-hd"];
 
 // Speech-to-text models
-export const SPEECH_TO_TEXT_MODELS = [
-  "whisper-1"
-];
+export const SPEECH_TO_TEXT_MODELS = ["whisper-1"];
