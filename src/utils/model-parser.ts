@@ -2,7 +2,7 @@
  * Model name parser for handling :online suffix functionality
  */
 
-import { RETRIEVAL_SUPPORTED_MODELS } from '../constants/models';
+import { RETRIEVAL_SUPPORTED_MODELS } from "../constants/models";
 
 export interface ModelParseResult {
   originalModel: string;
@@ -18,7 +18,7 @@ export interface WebSearchConfig {
 }
 
 export class ModelParser {
-  private static readonly ONLINE_SUFFIX = ':online';
+  private static readonly ONLINE_SUFFIX = ":online";
   private static readonly DEFAULT_NUM_OF_SITE = 1;
   private static readonly DEFAULT_MAX_WORD = 500;
 
@@ -26,39 +26,39 @@ export class ModelParser {
    * Parse model name and detect :online suffix
    */
   static parseModelName(modelName: string): ModelParseResult {
-    if (!modelName || typeof modelName !== 'string') {
+    if (!modelName || typeof modelName !== "string") {
       return {
-        originalModel: '',
+        originalModel: "",
         hasOnlineSuffix: false,
         isValid: false,
-        error: 'Model name cannot be empty'
+        error: "Model name cannot be empty",
       };
     }
 
     const trimmedModel = modelName.trim();
-    
+
     // Check for multiple colons (invalid format)
     const colonCount = (trimmedModel.match(/:/g) || []).length;
     if (colonCount > 1) {
       return {
-        originalModel: '',
+        originalModel: "",
         hasOnlineSuffix: false,
         isValid: false,
-        error: 'Invalid model name format. Only \':online\' suffix is supported'
+        error: "Invalid model name format. Only ':online' suffix is supported",
       };
     }
 
     // Check if model has :online suffix
     if (trimmedModel.endsWith(this.ONLINE_SUFFIX)) {
       const originalModel = trimmedModel.slice(0, -this.ONLINE_SUFFIX.length);
-      
+
       // Validate that original model name is not empty
       if (!originalModel) {
         return {
-          originalModel: '',
+          originalModel: "",
           hasOnlineSuffix: true,
           isValid: false,
-          error: 'Model name cannot be empty'
+          error: "Model name cannot be empty",
         };
       }
 
@@ -68,24 +68,24 @@ export class ModelParser {
           originalModel,
           hasOnlineSuffix: true,
           isValid: false,
-          error: `Model '${originalModel}' does not support web search functionality`
+          error: `Model '${originalModel}' does not support web search functionality`,
         };
       }
 
       return {
         originalModel,
         hasOnlineSuffix: true,
-        isValid: true
+        isValid: true,
       };
     }
 
     // Check for invalid suffix (colon present but not :online)
-    if (trimmedModel.includes(':')) {
+    if (trimmedModel.includes(":")) {
       return {
-        originalModel: '',
+        originalModel: "",
         hasOnlineSuffix: false,
         isValid: false,
-        error: 'Invalid model name format. Only \':online\' suffix is supported'
+        error: "Invalid model name format. Only ':online' suffix is supported",
       };
     }
 
@@ -93,7 +93,7 @@ export class ModelParser {
     return {
       originalModel: trimmedModel,
       hasOnlineSuffix: false,
-      isValid: true
+      isValid: true,
     };
   }
 
@@ -102,19 +102,22 @@ export class ModelParser {
    */
   static getWebSearchConfig(env?: any): WebSearchConfig {
     // Allow environment variables to override default values
-    const numOfSite = env?.WEB_SEARCH_NUM_OF_SITE 
-      ? parseInt(env.WEB_SEARCH_NUM_OF_SITE, 10) 
+    const numOfSite = env?.WEB_SEARCH_NUM_OF_SITE
+      ? parseInt(env.WEB_SEARCH_NUM_OF_SITE, 10)
       : this.DEFAULT_NUM_OF_SITE;
-    
-    const maxWord = env?.WEB_SEARCH_MAX_WORD 
-      ? parseInt(env.WEB_SEARCH_MAX_WORD, 10) 
+
+    const maxWord = env?.WEB_SEARCH_MAX_WORD
+      ? parseInt(env.WEB_SEARCH_MAX_WORD, 10)
       : this.DEFAULT_MAX_WORD;
 
     // Validate and use safe defaults if parsing fails
     return {
       webSearch: true,
-      numOfSite: isNaN(numOfSite) || numOfSite <= 0 ? this.DEFAULT_NUM_OF_SITE : numOfSite,
-      maxWord: isNaN(maxWord) || maxWord <= 0 ? this.DEFAULT_MAX_WORD : maxWord
+      numOfSite:
+        isNaN(numOfSite) || numOfSite <= 0
+          ? this.DEFAULT_NUM_OF_SITE
+          : numOfSite,
+      maxWord: isNaN(maxWord) || maxWord <= 0 ? this.DEFAULT_MAX_WORD : maxWord,
     };
   }
 
@@ -128,29 +131,32 @@ export class ModelParser {
   /**
    * Parse model name and return both clean model and web search config if applicable
    */
-  static parseAndGetConfig(modelName: string, env?: any): {
+  static parseAndGetConfig(
+    modelName: string,
+    env?: any,
+  ): {
     cleanModel: string;
     webSearchConfig?: WebSearchConfig;
     error?: string;
   } {
     const parseResult = this.parseModelName(modelName);
-    
+
     if (!parseResult.isValid) {
       return {
-        cleanModel: '',
-        error: parseResult.error
+        cleanModel: "",
+        error: parseResult.error,
       };
     }
 
     if (parseResult.hasOnlineSuffix) {
       return {
         cleanModel: parseResult.originalModel,
-        webSearchConfig: this.getWebSearchConfig(env)
+        webSearchConfig: this.getWebSearchConfig(env),
       };
     }
 
     return {
-      cleanModel: parseResult.originalModel
+      cleanModel: parseResult.originalModel,
     };
   }
 }

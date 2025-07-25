@@ -6,14 +6,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [3.0.0] - 2025-07-25
+### 🎉 Major Release - Hono Framework Migration
+
+This release represents a complete architectural overhaul, migrating from native Cloudflare Workers to the Hono framework while maintaining 100% API compatibility.
+
 ### Added
-- Features to be released
+- **Hono Framework Integration** - Modern web framework with superior type safety and middleware support
+- **Enhanced Type System** - Comprehensive TypeScript types with `HonoEnv` environment definitions
+- **Unified Middleware Architecture**:
+  - Global error handling middleware with structured error responses
+  - CORS middleware using Hono's built-in support
+  - Authentication middleware for consistent API key validation
+  - Rate limiting middleware adapted from existing implementation
+- **Modular Route Structure** - Clean separation of routes in dedicated files (`src/routes/`)
+- **Custom Error Classes** - `ValidationError`, `AuthenticationError`, `RateLimitError`, `ApiError`
+- **Enhanced Error Logging** - Detailed error tracking with stack traces and request context
+- **Image Generation Authentication** - Added missing auth middleware to image generation endpoint
 
 ### Changed
-- Changes to be released
+- **Complete Architecture Rewrite** - Migrated from manual routing to Hono's declarative routing
+- **Middleware Execution Order** - Proper middleware chain with error handler at the outermost layer
+- **Error Response Format** - Standardized error responses matching OpenAI API format:
+  ```json
+  {
+    "error": {
+      "message": "Error description",
+      "type": "error_type",
+      "param": null,
+      "code": "error_code"
+    }
+  }
+  ```
+- **File Organization** - New structure with `src/routes/`, dedicated middleware files, and enhanced types
+- **Request Processing Flow** - Cleaner, more maintainable request handling pipeline
+- **Dependencies** - Added `hono@^4.8.5` and `prettier@^3.6.2` as dev dependency
 
 ### Fixed
-- Fixes to be released
+- **Authentication Error Handling** - Properly returns 401 with structured error when API key is missing
+- **Image Generation Errors** - Better error messages with upstream API error details
+- **JSON Parsing Errors** - Graceful handling of invalid JSON in request bodies
+- **Unhandled Exceptions** - Global error catcher ensures all errors return structured responses
+
+### Technical Details
+- **Breaking Changes**: None - maintains full API compatibility
+- **Performance**: Maintained edge performance characteristics
+- **Type Safety**: Full TypeScript support with enhanced type definitions
+- **Middleware Pattern**: Composable middleware with proper error boundaries
+
+### Migration Notes
+While this is a major version bump due to the architectural changes, the API remains 100% compatible. No changes are required for existing API consumers.
 
 ## [2.11.0] - 2025-07-24
 ### Added
