@@ -31,6 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global error handler now uses unified error formatting for consistency
 - Better TypeScript support with proper error class hierarchy
 
+## [3.0.1] - 2025-07-26
+### Fixed
+- **Image URL Processing** - Fixed User-Agent header issue preventing image downloads from certain websites
+- **Image Placeholder Text** - Removed unnecessary Chinese placeholder text from image processing logic
+- **HTTP Image Support** - Enhanced support for HTTP/HTTPS image URLs with proper headers
+
+### Changed
+- Improved `processImageUrl` function to include proper User-Agent header for better compatibility
+- Cleaned up `extractTextFromContent` function to remove redundant image indicators
+- Enhanced error handling for image URL fetching
+
 ## [3.0.0] - 2025-07-25
 ### 🎉 Major Release - Hono Framework Migration
 
