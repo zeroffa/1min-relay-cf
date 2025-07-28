@@ -3,19 +3,21 @@
  */
 
 import { CORS_HEADERS } from "../constants";
+import { toOpenAIError } from "./errors";
 
 export function createErrorResponse(
   message: string,
   status: number = 400,
   errorType: string = "invalid_request_error",
   errorCode: string | null = null,
+  param: string | null = null,
 ): Response {
   return new Response(
     JSON.stringify({
       error: {
         message,
         type: errorType,
-        param: null,
+        param: param,
         code: errorCode,
       },
     }),
@@ -47,4 +49,15 @@ export function createCorsResponse(): Response {
     status: 200,
     headers: CORS_HEADERS,
   });
+}
+
+export function createErrorResponseFromError(error: unknown): Response {
+  const errorData = toOpenAIError(error);
+  return createErrorResponse(
+    errorData.message,
+    errorData.status,
+    errorData.type,
+    errorData.code,
+    errorData.param,
+  );
 }
