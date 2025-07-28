@@ -7,8 +7,11 @@ import { OneMinApiService } from "../services";
 import {
   createErrorResponse,
   createSuccessResponse,
+  createErrorResponseFromError,
   ModelParser,
   WebSearchConfig,
+  ValidationError,
+  ModelNotFoundError,
 } from "../utils";
 import {
   extractImageFromContent,
@@ -31,7 +34,7 @@ export class ChatHandler {
       return await this.handleChatCompletionsWithBody(requestBody, "");
     } catch (error) {
       console.error("Chat completion error:", error);
-      return createErrorResponse("Internal server error", 500);
+      return createErrorResponseFromError(error);
     }
   }
 
@@ -65,12 +68,7 @@ export class ChatHandler {
 
       // Validate that the clean model exists in our supported models
       if (!ALL_ONE_MIN_AVAILABLE_MODELS.includes(cleanModel)) {
-        return createErrorResponse(
-          `The model '${cleanModel}' does not exist`,
-          400,
-          "invalid_request_error",
-          "model_not_found",
-        );
+        throw new ModelNotFoundError(cleanModel);
       }
 
       // Check for images and validate vision model support
@@ -109,7 +107,7 @@ export class ChatHandler {
       }
     } catch (error) {
       console.error("Chat completion error:", error);
-      return createErrorResponse("Internal server error", 500);
+      return createErrorResponseFromError(error);
     }
   }
 

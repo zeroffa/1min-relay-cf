@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2025-07-28
+### Added
+- **Enhanced Error Handling System** - Complete rewrite of error handling to match OpenAI API format exactly
+- **New Error Classes** - Added `ModelNotFoundError` for better error categorization
+- **Unified Error Conversion** - New `toOpenAIError()` function for consistent error formatting
+- **Error Response Helper** - Added `createErrorResponseFromError()` for automatic error conversion
+
+### Changed
+- **Error Response Format** - All errors now include proper `param` field indicating which parameter caused the error
+- **Error Codes** - Added specific error codes like `model_not_found`, `invalid_api_key`, `rate_limit_exceeded`
+- **Global Error Handler** - Simplified to use unified error conversion for all error types
+- **Error Parameters** - Updated `createErrorResponse()` to accept `param` parameter
+
+### Fixed
+- **OpenAI API Compatibility** - Error responses now fully match OpenAI's error format specification
+- **Missing Error Fields** - Fixed missing `param` and `code` fields in error responses
+- **Error Type Consistency** - Ensured correct error types (`invalid_request_error`, `rate_limit_error`, `api_error`)
+
+### Technical Details
+- Centralized error handling logic in `src/utils/errors.ts`
+- Updated all handlers to throw typed errors instead of returning error responses
+- Global error handler now uses unified error formatting for consistency
+- Better TypeScript support with proper error class hierarchy
+
 ## [3.0.1] - 2025-07-26
 ### Fixed
 - **Image URL Processing** - Fixed User-Agent header issue preventing image downloads from certain websites
