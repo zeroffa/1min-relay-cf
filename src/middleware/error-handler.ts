@@ -24,7 +24,7 @@ export const errorHandler = createMiddleware<HonoEnv>(async (c, next) => {
 
     // Use the unified error handler for consistent OpenAI API format
     const errorData = toOpenAIError(error);
-    
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -44,7 +44,7 @@ export const errorHandler = createMiddleware<HonoEnv>(async (c, next) => {
         },
       },
       errorData.status as any,
-      headers,
+      headers
     );
   }
 });

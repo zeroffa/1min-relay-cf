@@ -7,7 +7,7 @@ const app = new Hono<HonoEnv>();
 
 app.get("/", async (c) => {
   const response = await handleModelsEndpoint();
-  const data = await response.json() as ModelsResponse;
+  const data = (await response.json()) as ModelsResponse;
   return c.json(data);
 });
 

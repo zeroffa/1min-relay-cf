@@ -34,6 +34,6 @@ export function handleModelsEndpoint(): Response {
     object: "list",
     data: models,
   };
-  
+
   return createSuccessResponse(response);
 }

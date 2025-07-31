@@ -2,7 +2,16 @@
  * 1min.ai API service layer
  */
 
-import { Env, OneMinImageResponse, Message, MessageContent, TextContent, ImageContent, OneMinRequestBody, OneMinPromptObject } from "../types";
+import {
+  Env,
+  OneMinImageResponse,
+  Message,
+  MessageContent,
+  TextContent,
+  ImageContent,
+  OneMinRequestBody,
+  OneMinPromptObject,
+} from "../types";
 import {
   processImageUrl,
   uploadImageToAsset,
@@ -14,7 +23,7 @@ import { WebSearchConfig } from "../utils/model-parser";
 function extractTextFromContent(
   content:
     | string
-    | Array<{ type: string; text?: string; image_url?: { url: string } }>,
+    | Array<{ type: string; text?: string; image_url?: { url: string } }>
 ): string {
   if (typeof content === "string") {
     return content;
@@ -36,7 +45,7 @@ function extractTextFromContent(
 // Converts message array to format expected by 1min.ai API
 function formatConversationHistory(
   messages: any[],
-  newInput: string = "",
+  newInput: string = ""
 ): string {
   let formattedHistory = "";
 
@@ -71,7 +80,7 @@ export class OneMinApiService {
   async sendChatRequest(
     requestBody: OneMinRequestBody,
     isStreaming: boolean = false,
-    apiKey?: string,
+    apiKey?: string
   ): Promise<Response> {
     const apiUrl = isStreaming
       ? this.env.ONE_MIN_CONVERSATION_API_STREAMING_URL
@@ -101,13 +110,13 @@ export class OneMinApiService {
             url: apiUrl,
             hasWebSearch: requestBody.promptObject?.webSearch,
             model: requestBody.model,
-          },
+          }
         );
 
         // If the error might be related to webSearch parameters, try graceful degradation
         if (response.status === 400 && requestBody.promptObject?.webSearch) {
           console.warn(
-            "Attempting graceful degradation: removing webSearch parameters",
+            "Attempting graceful degradation: removing webSearch parameters"
           );
           const fallbackRequestBody =
             this.createFallbackRequestBody(requestBody);
@@ -133,7 +142,7 @@ export class OneMinApiService {
         }
 
         throw new Error(
-          `1min.ai API error: ${response.status} ${response.statusText}`,
+          `1min.ai API error: ${response.status} ${response.statusText}`
         );
       }
 
@@ -144,7 +153,9 @@ export class OneMinApiService {
     }
   }
 
-  private createFallbackRequestBody(originalRequestBody: OneMinRequestBody): OneMinRequestBody {
+  private createFallbackRequestBody(
+    originalRequestBody: OneMinRequestBody
+  ): OneMinRequestBody {
     const fallbackBody = JSON.parse(JSON.stringify(originalRequestBody));
 
     // Remove webSearch related parameters
@@ -159,7 +170,7 @@ export class OneMinApiService {
 
   async sendImageRequest(
     requestBody: OneMinRequestBody,
-    apiKey?: string,
+    apiKey?: string
   ): Promise<OneMinImageResponse> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -176,14 +187,14 @@ export class OneMinApiService {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
-      },
+      }
     );
 
     if (!response.ok) {
       const errorData = await response.text();
       console.error("=== 1MIN.AI API ERROR RESPONSE ===", errorData);
       throw new Error(
-        `1min.ai API error: ${response.status} ${response.statusText}`,
+        `1min.ai API error: ${response.status} ${response.statusText}`
       );
     }
 
@@ -197,7 +208,7 @@ export class OneMinApiService {
     apiKey: string,
     temperature?: number,
     maxTokens?: number,
-    webSearchConfig?: WebSearchConfig,
+    webSearchConfig?: WebSearchConfig
   ): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
@@ -205,7 +216,8 @@ export class OneMinApiService {
     let allImagesUploaded = true;
 
     // Only process images from the latest user message to avoid reprocessing
-    const latestMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+    const latestMessage =
+      messages && messages.length > 0 ? messages[messages.length - 1] : null;
 
     if (latestMessage && Array.isArray(latestMessage.content)) {
       for (const item of latestMessage.content) {
@@ -222,7 +234,7 @@ export class OneMinApiService {
             const imagePath = await uploadImageToAsset(
               imageData,
               apiKey,
-              this.env.ONE_MIN_ASSET_URL,
+              this.env.ONE_MIN_ASSET_URL
             );
             imagePaths.push(imagePath);
           } catch (error) {
@@ -286,7 +298,7 @@ export class OneMinApiService {
     apiKey: string,
     temperature?: number,
     maxTokens?: number,
-    webSearchConfig?: WebSearchConfig,
+    webSearchConfig?: WebSearchConfig
   ): Promise<any> {
     // Process images and check for vision model support
     const imagePaths: string[] = [];
@@ -294,7 +306,8 @@ export class OneMinApiService {
     let allImagesUploaded = true;
 
     // Only process images from the latest user message to avoid reprocessing
-    const latestMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+    const latestMessage =
+      messages && messages.length > 0 ? messages[messages.length - 1] : null;
 
     if (latestMessage && Array.isArray(latestMessage.content)) {
       for (const item of latestMessage.content) {
@@ -311,7 +324,7 @@ export class OneMinApiService {
             const imagePath = await uploadImageToAsset(
               imageData,
               apiKey,
-              this.env.ONE_MIN_ASSET_URL,
+              this.env.ONE_MIN_ASSET_URL
             );
             imagePaths.push(imagePath);
           } catch (error) {
@@ -373,7 +386,7 @@ export class OneMinApiService {
     prompt: string,
     model: string,
     n?: number,
-    size?: string,
+    size?: string
   ): OneMinRequestBody {
     return {
       type: "IMAGE_GENERATOR",

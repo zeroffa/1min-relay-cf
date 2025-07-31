@@ -17,7 +17,7 @@ export class RateLimiter {
 
   async checkRateLimit(
     clientId: string,
-    tokenCount: number = 0,
+    tokenCount: number = 0
   ): Promise<{ allowed: boolean; response?: Response }> {
     if (!this.env.RATE_LIMIT_STORE) {
       // If no KV store is configured, allow all requests
@@ -35,25 +35,28 @@ export class RateLimiter {
         : { timestamps: [], tokenCount: 0, windowStart: now };
 
       // Check if we need to reset the window
-      const needsReset = !record.windowStart || (now - record.windowStart) >= this.config.windowMs;
-      
+      const needsReset =
+        !record.windowStart || now - record.windowStart >= this.config.windowMs;
+
       if (needsReset) {
         // Reset counters for new window
         record = {
           timestamps: [],
           tokenCount: 0,
-          windowStart: now
+          windowStart: now,
         };
       } else {
         // Clean up old timestamps (only keep current window)
         record.timestamps = record.timestamps.filter(
-          (timestamp) => timestamp > windowStart,
+          (timestamp) => timestamp > windowStart
         );
       }
 
       // Check request count limit
       if (record.timestamps.length >= this.config.maxRequests) {
-        const retryAfter = Math.ceil(((record.windowStart ?? now) + this.config.windowMs - now) / 1000);
+        const retryAfter = Math.ceil(
+          ((record.windowStart ?? now) + this.config.windowMs - now) / 1000
+        );
         return {
           allowed: false,
           response: this.createRateLimitResponse(
@@ -68,7 +71,9 @@ export class RateLimiter {
         this.config.maxTokens &&
         record.tokenCount + tokenCount > this.config.maxTokens
       ) {
-        const retryAfter = Math.ceil(((record.windowStart ?? now) + this.config.windowMs - now) / 1000);
+        const retryAfter = Math.ceil(
+          ((record.windowStart ?? now) + this.config.windowMs - now) / 1000
+        );
         return {
           allowed: false,
           response: this.createRateLimitResponse(
@@ -95,7 +100,10 @@ export class RateLimiter {
     }
   }
 
-  private createRateLimitResponse(message: string, retryAfter: number): Response {
+  private createRateLimitResponse(
+    message: string,
+    retryAfter: number
+  ): Response {
     return new Response(
       JSON.stringify({
         error: {
@@ -139,7 +147,7 @@ export class RateLimiter {
 
   async middleware(
     request: Request,
-    tokenCount: number = 0,
+    tokenCount: number = 0
   ): Promise<{ allowed: boolean; response?: Response }> {
     const clientId = this.getClientId(request);
     return this.checkRateLimit(clientId, tokenCount);

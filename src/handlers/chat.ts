@@ -2,7 +2,18 @@
  * Chat completions endpoint handler
  */
 
-import { Env, ChatCompletionRequest, Message, MessageContent, TextContent, ImageContent, ChatCompletionResponse, ChatCompletionStreamChunk, OneMinResponse, OneMinStreamChunk } from "../types";
+import {
+  Env,
+  ChatCompletionRequest,
+  Message,
+  MessageContent,
+  TextContent,
+  ImageContent,
+  ChatCompletionResponse,
+  ChatCompletionStreamChunk,
+  OneMinResponse,
+  OneMinStreamChunk,
+} from "../types";
 import { OneMinApiService } from "../services";
 import {
   createErrorResponse,
@@ -40,13 +51,13 @@ export class ChatHandler {
 
   async handleChatCompletionsWithBody(
     requestBody: ChatCompletionRequest,
-    apiKey: string,
+    apiKey: string
   ): Promise<Response> {
     try {
       // Validate required fields
       if (!requestBody.messages || !Array.isArray(requestBody.messages)) {
         return createErrorResponse(
-          "Messages field is required and must be an array",
+          "Messages field is required and must be an array"
         );
       }
 
@@ -60,7 +71,7 @@ export class ChatHandler {
           parseResult.error,
           400,
           "invalid_request_error",
-          "model_not_found",
+          "model_not_found"
         );
       }
 
@@ -78,12 +89,14 @@ export class ChatHandler {
           `Model '${cleanModel}' does not support image inputs`,
           400,
           "invalid_request_error",
-          "model_not_supported",
+          "model_not_supported"
         );
       }
 
       // Process messages and extract images if any
-      const processedMessages = this.processMessages(requestBody.messages as Message[]);
+      const processedMessages = this.processMessages(
+        requestBody.messages as Message[]
+      );
 
       // Handle streaming vs non-streaming
       if (requestBody.stream) {
@@ -93,7 +106,7 @@ export class ChatHandler {
           requestBody.temperature,
           requestBody.max_tokens,
           apiKey,
-          webSearchConfig,
+          webSearchConfig
         );
       } else {
         return this.handleNonStreamingChat(
@@ -102,7 +115,7 @@ export class ChatHandler {
           requestBody.temperature,
           requestBody.max_tokens,
           apiKey,
-          webSearchConfig,
+          webSearchConfig
         );
       }
     } catch (error) {
@@ -141,15 +154,17 @@ export class ChatHandler {
           // Convert to format expected by 1min.ai API
           return {
             ...message,
-            content: (message.content as (TextContent | ImageContent)[]).map((item) => {
-              if (item.type === "image_url") {
-                return {
-                  type: "image_url",
-                  image_url: { url: item.image_url.url },
-                };
+            content: (message.content as (TextContent | ImageContent)[]).map(
+              (item) => {
+                if (item.type === "image_url") {
+                  return {
+                    type: "image_url",
+                    image_url: { url: item.image_url.url },
+                  };
+                }
+                return item;
               }
-              return item;
-            }),
+            ),
           };
         }
       }
@@ -163,7 +178,7 @@ export class ChatHandler {
     temperature?: number,
     maxTokens?: number,
     apiKey?: string,
-    webSearchConfig?: WebSearchConfig,
+    webSearchConfig?: WebSearchConfig
   ): Promise<Response> {
     try {
       const requestBody = await this.apiService.buildChatRequestBody(
@@ -172,15 +187,15 @@ export class ChatHandler {
         apiKey || "",
         temperature,
         maxTokens,
-        webSearchConfig,
+        webSearchConfig
       );
 
       const response = await this.apiService.sendChatRequest(
         requestBody,
         false,
-        apiKey,
+        apiKey
       );
-      const data = await response.json() as OneMinResponse;
+      const data = (await response.json()) as OneMinResponse;
 
       // Transform response to OpenAI format
       const openAIResponse = this.transformToOpenAIFormat(data, model);
@@ -197,7 +212,7 @@ export class ChatHandler {
     temperature?: number,
     maxTokens?: number,
     apiKey?: string,
-    webSearchConfig?: WebSearchConfig,
+    webSearchConfig?: WebSearchConfig
   ): Promise<Response> {
     try {
       const requestBody = await this.apiService.buildStreamingChatRequestBody(
@@ -206,13 +221,13 @@ export class ChatHandler {
         apiKey || "",
         temperature,
         maxTokens,
-        webSearchConfig,
+        webSearchConfig
       );
 
       const response = await this.apiService.sendChatRequest(
         requestBody,
         true,
-        apiKey,
+        apiKey
       );
 
       // Create streaming response following original implementation
@@ -263,9 +278,7 @@ export class ChatHandler {
             };
 
             await writer.write(
-              encoder.encode(
-                `data: ${JSON.stringify(returnChunk)}\n\n`,
-              ),
+              encoder.encode(`data: ${JSON.stringify(returnChunk)}\n\n`)
             );
           }
 
@@ -285,7 +298,7 @@ export class ChatHandler {
           };
 
           await writer.write(
-            encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`),
+            encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`)
           );
           await writer.write(encoder.encode("data: [DONE]\n\n"));
           await writer.close();
@@ -309,12 +322,15 @@ export class ChatHandler {
       console.error("Streaming chat error:", error);
       return createErrorResponse(
         "Failed to process streaming chat completion",
-        500,
+        500
       );
     }
   }
 
-  private transformToOpenAIFormat(data: OneMinResponse, model: string): ChatCompletionResponse {
+  private transformToOpenAIFormat(
+    data: OneMinResponse,
+    model: string
+  ): ChatCompletionResponse {
     return {
       id: `chatcmpl-${crypto.randomUUID()}`,
       object: "chat.completion",
@@ -341,7 +357,10 @@ export class ChatHandler {
     };
   }
 
-  private transformStreamChunkToOpenAI(data: OneMinStreamChunk, model: string): ChatCompletionStreamChunk {
+  private transformStreamChunkToOpenAI(
+    data: OneMinStreamChunk,
+    model: string
+  ): ChatCompletionStreamChunk {
     return {
       id: `chatcmpl-${crypto.randomUUID()}`,
       object: "chat.completion.chunk",
