@@ -53,7 +53,7 @@ export class RateLimiter {
 
       // Check request count limit
       if (record.timestamps.length >= this.config.maxRequests) {
-        const retryAfter = Math.ceil((record.windowStart + this.config.windowMs - now) / 1000);
+        const retryAfter = Math.ceil(((record.windowStart ?? now) + this.config.windowMs - now) / 1000);
         return {
           allowed: false,
           response: this.createRateLimitResponse(
@@ -68,7 +68,7 @@ export class RateLimiter {
         this.config.maxTokens &&
         record.tokenCount + tokenCount > this.config.maxTokens
       ) {
-        const retryAfter = Math.ceil((record.windowStart + this.config.windowMs - now) / 1000);
+        const retryAfter = Math.ceil(((record.windowStart ?? now) + this.config.windowMs - now) / 1000);
         return {
           allowed: false,
           response: this.createRateLimitResponse(

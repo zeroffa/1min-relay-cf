@@ -33,7 +33,9 @@ export function calculateTokens(
   if (TOKEN_CACHE.size >= MAX_CACHE_SIZE) {
     // Remove oldest entry (simple FIFO)
     const firstKey = TOKEN_CACHE.keys().next().value;
-    TOKEN_CACHE.delete(firstKey);
+    if (firstKey !== undefined) {
+      TOKEN_CACHE.delete(firstKey);
+    }
   }
   TOKEN_CACHE.set(cacheKey, tokenCount);
 
