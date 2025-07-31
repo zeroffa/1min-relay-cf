@@ -31,8 +31,8 @@ export function createErrorResponse(
   );
 }
 
-export function createSuccessResponse(
-  data: any,
+export function createSuccessResponse<T = unknown>(
+  data: T,
   status: number = 200,
 ): Response {
   return new Response(JSON.stringify(data), {

@@ -12,7 +12,7 @@ import {
 export const errorHandler = createMiddleware<HonoEnv>(async (c, next) => {
   try {
     await next();
-  } catch (error: any) {
+  } catch (error) {
     console.error("Request error:", {
       error: error,
       message: error instanceof Error ? error.message : String(error),
@@ -43,7 +43,7 @@ export const errorHandler = createMiddleware<HonoEnv>(async (c, next) => {
           code: errorData.code,
         },
       },
-      errorData.status,
+      errorData.status as any,
       headers,
     );
   }

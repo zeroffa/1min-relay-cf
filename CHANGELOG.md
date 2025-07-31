@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2025-07-28
+### Added
+- **Strict Null Checks** - Enabled `strictNullChecks: true` for complete null/undefined safety
+- **Full TypeScript Strict Mode** - All TypeScript strict checks are now enabled
+
+### Changed
+- **TypeScript Configuration** - Enabled `strictNullChecks: true` completing the strict mode migration
+- **Null-safe String Operations** - Fixed potential undefined access in IP parsing logic
+
+### Fixed
+- **IP Header Parsing** - Fixed potential undefined access when splitting X-Forwarded-For headers
+- **Response Type Safety** - Fixed type inference issues in models endpoint
+- **Array Access Safety** - Ensured safe array element access with proper null checks
+
+### Technical Details
+- Only 4 errors needed fixing to enable strict null checks
+- Improved null safety in rate limiting middleware
+- Better type inference for JSON responses
+- Codebase now fully compliant with TypeScript strict mode
+
+## [3.2.0] - 2025-07-28
+### Added
+- **Strict TypeScript Type System** - Enabled `noImplicitAny` to enforce explicit typing throughout the codebase
+- **Comprehensive Type Definitions** - Added new type definitions for messages, API responses, and 1min.ai specific types
+- **Type-safe Message Handling** - Created proper types for text and image content in messages
+- **Model Response Types** - Added structured types for model listings and capabilities
+
+### Changed
+- **TypeScript Configuration** - Enabled `noImplicitAny: true` for better type safety
+- **Removed All `any` Types** - Replaced all implicit and explicit `any` types with proper TypeScript interfaces
+- **Enhanced Type Inference** - Improved type narrowing and inference throughout the codebase
+- **Service Layer Types** - Added complete typing for OneMinApiService methods and parameters
+
+### Fixed
+- **Type Safety Issues** - Fixed all TypeScript compilation errors related to implicit any types
+- **Message Content Handling** - Fixed type issues with mixed text/image content arrays
+- **Stream Response Types** - Corrected typing for streaming chat completion responses
+- **Error Handler Types** - Fixed status code typing in error handler middleware
+
+### Technical Details
+- Added 6 new type definition files for comprehensive type coverage
+- Migrated from loose typing to strict typing without breaking existing functionality
+- Improved developer experience with better IDE autocompletion and type checking
+- Prepared codebase for future `strictNullChecks` enablement
+
 ## [3.1.0] - 2025-07-28
 ### Added
 - **Enhanced Error Handling System** - Complete rewrite of error handling to match OpenAI API format exactly

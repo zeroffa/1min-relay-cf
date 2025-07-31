@@ -2,6 +2,8 @@
  * Image processing utilities
  */
 
+import { MessageContent, TextContent, ImageContent } from "../types";
+
 /**
  * Checks if URL is an image URL
  * @param url - URL to check
@@ -22,7 +24,7 @@ export function isImageUrl(url: string): boolean {
  * @param content - Message content that may contain images
  * @returns Image URL if found, null otherwise
  */
-export function extractImageFromContent(content: any): string | null {
+export function extractImageFromContent(content: MessageContent): string | null {
   if (typeof content === "string") {
     return null;
   }
@@ -135,9 +137,9 @@ export async function uploadImageToAsset(
  * @param content - Mixed content array
  * @returns Combined text content
  */
-export function extractTextFromContent(content: any[]): string {
+export function extractTextFromContent(content: (TextContent | ImageContent)[]): string {
   return content
-    .filter((item) => item.type === "text" && item.text)
+    .filter((item): item is TextContent => item.type === "text")
     .map((item) => item.text)
     .join("\n");
 }

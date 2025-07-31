@@ -2,7 +2,7 @@
  * Chat completions endpoint handler
  */
 
-import { Env, ChatCompletionRequest } from "../types";
+import { Env, ChatCompletionRequest, Message, MessageContent, TextContent, ImageContent, ChatCompletionResponse, ChatCompletionStreamChunk, OneMinResponse, OneMinStreamChunk } from "../types";
 import { OneMinApiService } from "../services";
 import {
   createErrorResponse,
@@ -72,7 +72,7 @@ export class ChatHandler {
       }
 
       // Check for images and validate vision model support
-      const hasImages = this.checkForImages(requestBody.messages);
+      const hasImages = this.checkForImages(requestBody.messages as Message[]);
       if (hasImages && !isVisionSupportedModel(cleanModel)) {
         return createErrorResponse(
           `Model '${cleanModel}' does not support image inputs`,
@@ -83,7 +83,7 @@ export class ChatHandler {
       }
 
       // Process messages and extract images if any
-      const processedMessages = this.processMessages(requestBody.messages);
+      const processedMessages = this.processMessages(requestBody.messages as Message[]);
 
       // Handle streaming vs non-streaming
       if (requestBody.stream) {
@@ -119,7 +119,7 @@ export class ChatHandler {
     return ModelParser.parseAndGetConfig(modelName, this.env);
   }
 
-  private checkForImages(messages: any[]): boolean {
+  private checkForImages(messages: Message[]): boolean {
     for (const message of messages) {
       if (Array.isArray(message.content)) {
         for (const item of message.content) {
@@ -132,7 +132,7 @@ export class ChatHandler {
     return false;
   }
 
-  private processMessages(messages: any[]): any[] {
+  private processMessages(messages: Message[]): Message[] {
     return messages.map((message) => {
       // Handle vision inputs
       if (Array.isArray(message.content)) {
@@ -141,7 +141,7 @@ export class ChatHandler {
           // Convert to format expected by 1min.ai API
           return {
             ...message,
-            content: message.content.map((item: any) => {
+            content: (message.content as (TextContent | ImageContent)[]).map((item) => {
               if (item.type === "image_url") {
                 return {
                   type: "image_url",
@@ -158,7 +158,7 @@ export class ChatHandler {
   }
 
   private async handleNonStreamingChat(
-    messages: any[],
+    messages: Message[],
     model: string,
     temperature?: number,
     maxTokens?: number,
@@ -180,7 +180,7 @@ export class ChatHandler {
         false,
         apiKey,
       );
-      const data = await response.json();
+      const data = await response.json() as OneMinResponse;
 
       // Transform response to OpenAI format
       const openAIResponse = this.transformToOpenAIFormat(data, model);
@@ -192,7 +192,7 @@ export class ChatHandler {
   }
 
   private async handleStreamingChat(
-    messages: any[],
+    messages: Message[],
     model: string,
     temperature?: number,
     maxTokens?: number,
@@ -246,7 +246,7 @@ export class ChatHandler {
             const chunk = decoder.decode(value);
 
             // Format chunk as OpenAI SSE
-            const returnChunk = {
+            const returnChunk: ChatCompletionStreamChunk = {
               id: `chatcmpl-${crypto.randomUUID()}`,
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
@@ -257,7 +257,7 @@ export class ChatHandler {
                   delta: {
                     content: chunk,
                   },
-                  finish_reason: null,
+                  finish_reason: null as string | null,
                 },
               ],
             };
@@ -270,7 +270,7 @@ export class ChatHandler {
           }
 
           // Send final chunk
-          const finalChunk = {
+          const finalChunk: ChatCompletionStreamChunk = {
             id: `chatcmpl-${crypto.randomUUID()}`,
             object: "chat.completion.chunk",
             created: Math.floor(Date.now() / 1000),
@@ -314,7 +314,7 @@ export class ChatHandler {
     }
   }
 
-  private transformToOpenAIFormat(data: any, model: string): any {
+  private transformToOpenAIFormat(data: OneMinResponse, model: string): ChatCompletionResponse {
     return {
       id: `chatcmpl-${crypto.randomUUID()}`,
       object: "chat.completion",
@@ -341,7 +341,7 @@ export class ChatHandler {
     };
   }
 
-  private transformStreamChunkToOpenAI(data: any, model: string): any {
+  private transformStreamChunkToOpenAI(data: OneMinStreamChunk, model: string): ChatCompletionStreamChunk {
     return {
       id: `chatcmpl-${crypto.randomUUID()}`,
       object: "chat.completion.chunk",
@@ -351,12 +351,9 @@ export class ChatHandler {
         {
           index: 0,
           delta: {
-            content:
-              data.content ||
-              data.aiRecord?.aiRecordDetail?.resultObject?.[0] ||
-              "",
+            content: data.receivedMessage || "",
           },
-          finish_reason: data.finish_reason || null,
+          finish_reason: null,
         },
       ],
     };
