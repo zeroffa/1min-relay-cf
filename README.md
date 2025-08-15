@@ -19,7 +19,7 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 
 ### Text Generation Models
 
-- **OpenAI**: o3-mini, o4-mini, gpt-4.5-preview, gpt-4.1, gpt-4.1-nano, gpt-4.1-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo, and more
+- **OpenAI**: gpt-5, gpt-5-mini, gpt-5-nano, gpt-5-chat-latest, o1-pro, o1, o1-mini, o3-mini, o4-mini, gpt-4.5-preview, gpt-4.1, gpt-4.1-nano, gpt-4.1-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo, and more
 - **Claude**: claude-3-5-sonnet, claude-3-5-haiku, claude-3-7-sonnet, claude-sonnet-4, claude-opus-4, claude-3-opus, claude-3-haiku
 - **MistralAI**: mistral-large-latest, mistral-small-latest, pixtral-12b
 - **GoogleAI**: gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash, gemini-2.0-flash-lite, gemini-2.5-flash, gemini-2.5-pro, gemini-2.5-flash-preview-05-20, gemini-2.5-flash-preview-04-17, gemini-2.5-pro-preview-05-06
@@ -30,7 +30,7 @@ A TypeScript implementation of the 1min.ai API relay service, designed to run on
 
 ### Vision Models (Image Input Support)
 
-- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
+- **OpenAI**: gpt-5, gpt-5-mini, gpt-5-chat-latest, gpt-4o, gpt-4o-mini, gpt-4-turbo
 
 ### Image Generation Models
 

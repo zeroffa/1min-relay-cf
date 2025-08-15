@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2025-07-31
+
+### Added
+
+- **GPT-5 Series Models Support** - Added support for the complete GPT-5 model family
+  - `gpt-5` - Latest GPT-5 base model with vision and code interpreter support
+  - `gpt-5-mini` - Lightweight GPT-5 variant with vision support
+  - `gpt-5-nano` - Ultra-lightweight GPT-5 for basic tasks
+  - `gpt-5-chat-latest` - Latest GPT-5 chat model with vision and code interpreter support
+- **Vision Support for GPT-5** - Enabled image input for gpt-5, gpt-5-mini, and gpt-5-chat-latest
+- **Code Interpreter for GPT-5** - Enabled code interpreter for gpt-5 and gpt-5-chat-latest
+- **Web Search for GPT-5** - All GPT-5 models support the :online suffix for web search
+
+### Changed
+
+- **Image Processing Optimization** - System now only processes images from the latest message, avoiding redundant processing of historical images
+- **Removed Debug Logging** - Cleaned up all debug console.log statements for production readiness
+- **Streaming Response Preservation** - Fixed logger middleware to not consume streaming response bodies
+
+### Fixed
+
+- **Streaming Response Issue** - Fixed bug where logging middleware was consuming SSE streams, preventing responses from reaching the client
+- **Image Reprocessing Bug** - Fixed issue where historical images were being reprocessed with each new message
+- **Git Conflict Resolution** - Resolved merge conflicts from TypeScript strict mode changes
+
 ## [3.3.0] - 2025-07-28
 
 ### Added
