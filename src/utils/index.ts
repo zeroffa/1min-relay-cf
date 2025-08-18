@@ -7,3 +7,4 @@ export * from "./image";
 export * from "./response";
 export * from "./model-parser";
 export * from "./errors";
+export * from "./function-calling";

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2025-08-18
+
+### Added
+- **Function Calling Support**: Complete implementation of OpenAI-compatible function calling
+  - Support for both modern `tools` and legacy `functions` parameters
+  - Works with all models via prompt engineering (not limited to OpenAI models)
+  - Automatic parsing of function calls from AI responses
+  - Compatible with streaming and non-streaming endpoints
+  - Support for multiple function calls in a single response
+- **Enhanced Authentication**: Added `AUTH_TOKEN` secret configuration
+  - Configurable authentication token via `wrangler secret put AUTH_TOKEN`
+  - Backwards compatible: if `AUTH_TOKEN` not set, any Bearer token is accepted
+  - More secure production deployment option
+
+### Changed
+- **Authentication**: Renamed API key references from `YOUR_API_KEY` to `your-auth-token` in documentation
+- **Types**: Enhanced response types to support function calling (`tool_calls`, `function_call`)
+- **Documentation**: Updated README with comprehensive AUTH_TOKEN setup instructions
+
+### Technical Details
+- New types: `Tool`, `FunctionDefinition`, `ToolCall`, `FunctionCall`, `ChatCompletionRequestWithTools`
+- New utilities: Function calling conversion, parsing, and response transformation
+- Enhanced chat handler with function calling detection and processing
+- Streaming support for function calls with proper SSE formatting
+
 ## [3.4.0] - 2025-07-31
 
 ### Added
