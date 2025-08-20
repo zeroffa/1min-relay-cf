@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.2] - 2025-08-20
+
+### Changed
+- **Completed Migration to New Model Capabilities API**:
+  - Replaced all usages of deprecated `isVisionSupportedModel` with `supportsVision`
+  - Updated `src/handlers/chat.ts` to use `supportsVision`
+  - Updated `src/handlers/responses.ts` to use `supportsVision`
+  - Updated `src/services/onemin-api.ts` to use `supportsVision` (2 occurrences)
+
+### Removed
+- **Deprecated Function Removal**: Completely removed `isVisionSupportedModel` function from `src/utils/image.ts`
+  - All functionality now uses the centralized model capabilities system
+  - Cleaner codebase with no deprecated functions
+
+### Technical Improvements
+- Completed full migration to centralized model capabilities checking
+- Improved code consistency across all modules
+- Reduced technical debt by removing deprecated code
+- Better maintainability with single source of truth for model capabilities
+
+## [3.5.1] - 2025-08-20
+
+### Fixed
+- **GPT-5 Vision Support**: Fixed issue where GPT-5 series models (gpt-5, gpt-5-mini, gpt-5-chat-latest) were not properly recognized as vision-capable models
+  - The `isVisionSupportedModel` function was using a hardcoded list instead of the centralized `VISION_SUPPORTED_MODELS` constant
+  - Now correctly uses the single source of truth from constants
+
+### Added
+- **Model Capabilities Utilities**: New centralized model capabilities checking system
+  - Added `src/utils/model-capabilities.ts` with comprehensive capability checking functions
+  - Functions include: `supportsVision()`, `supportsCodeInterpreter()`, `supportsRetrieval()`, `supportsFunctionCalling()`
+  - Added `getModelCapabilities()` to get all capabilities for a model at once
+  - Added `validateModelCapabilities()` for validating model requirements
+
+### Changed
+- **Refactored Vision Support Check**: Updated `isVisionSupportedModel` to use the new capabilities system
+  - Marked as deprecated in favor of `supportsVision()`
+  - Maintains backward compatibility while encouraging migration to new API
+
+### Technical Improvements
+- Eliminated duplicate model capability definitions
+- Established single source of truth for all model capabilities
+- Improved maintainability and extensibility of model capability checks
+- Better TypeScript type safety for model capabilities
+
 ## [3.5.0] - 2025-08-18
 
 ### Added

@@ -35,10 +35,8 @@ import {
   transformResponseWithFunctionCalls,
   transformStreamChunkWithFunctionCalls,
 } from "../utils";
-import {
-  extractImageFromContent,
-  isVisionSupportedModel,
-} from "../utils/image";
+import { extractImageFromContent } from "../utils/image";
+import { supportsVision } from "../utils/model-capabilities";
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from "../constants";
 
 export class ChatHandler {
@@ -95,7 +93,7 @@ export class ChatHandler {
 
       // Check for images and validate vision model support
       const hasImages = this.checkForImages(requestBody.messages as Message[]);
-      if (hasImages && !isVisionSupportedModel(cleanModel)) {
+      if (hasImages && !supportsVision(cleanModel)) {
         return createErrorResponse(
           `Model '${cleanModel}' does not support image inputs`,
           400,
@@ -227,14 +225,14 @@ export class ChatHandler {
 
       // Transform response to OpenAI format
       let openAIResponse = this.transformToOpenAIFormat(data, model);
-      
+
       // Parse function calls if function calling is enabled
       if (hasFunctionCalling && openAIResponse.choices && openAIResponse.choices.length > 0) {
         const choice = openAIResponse.choices[0];
         if (choice && choice.message) {
           const content = choice.message.content || "";
           const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(content);
-          
+
           if (toolCalls?.length || functionCall) {
             choice.message.content = cleanContent;
             openAIResponse = transformResponseWithFunctionCalls(
@@ -245,7 +243,7 @@ export class ChatHandler {
           }
         }
       }
-      
+
       return createSuccessResponse(openAIResponse);
     } catch (error) {
       console.error("Non-streaming chat error:", error);
@@ -309,7 +307,7 @@ export class ChatHandler {
             if (done) break;
 
             const chunk = decoder.decode(value);
-            
+
             // Accumulate content for function call parsing
             if (hasFunctionCalling) {
               accumulatedContent += chunk;
@@ -318,7 +316,7 @@ export class ChatHandler {
             // Check for function calls in accumulated content
             if (hasFunctionCalling && !functionCallsSent) {
               const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(accumulatedContent);
-              
+
               if (toolCalls?.length || functionCall) {
                 // Send function call chunk
                 const functionChunk: ChatCompletionStreamChunk = {
@@ -338,7 +336,7 @@ export class ChatHandler {
                   encoder.encode(`data: ${JSON.stringify(functionChunk)}\n\n`)
                 );
                 functionCallsSent = true;
-                
+
                 // Send clean content if any
                 if (cleanContent) {
                   const contentChunk: ChatCompletionStreamChunk = {
@@ -361,7 +359,7 @@ export class ChatHandler {
                 continue;
               }
             }
-            
+
             // Send regular content chunk if no function calls
             if (!hasFunctionCalling || !functionCallsSent) {
               const returnChunk: ChatCompletionStreamChunk = {
@@ -389,7 +387,7 @@ export class ChatHandler {
           // Parse final function calls if not yet sent
           if (hasFunctionCalling && !functionCallsSent && accumulatedContent) {
             const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(accumulatedContent);
-            
+
             if (toolCalls?.length || functionCall) {
               // Send function call chunk
               const functionChunk: ChatCompletionStreamChunk = {
@@ -408,7 +406,7 @@ export class ChatHandler {
               await writer.write(
                 encoder.encode(`data: ${JSON.stringify(functionChunk)}\n\n`)
               );
-              
+
               // Send clean content if any
               if (cleanContent) {
                 const contentChunk: ChatCompletionStreamChunk = {
@@ -430,7 +428,7 @@ export class ChatHandler {
               }
             }
           }
-          
+
           // Send final chunk
           const finalChunk: ChatCompletionStreamChunk = {
             id: `chatcmpl-${crypto.randomUUID()}`,
