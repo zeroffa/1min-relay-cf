@@ -64,7 +64,7 @@ POST /v1/responses
 ```bash
 curl -X POST http://localhost:8787/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4o",
     "messages": [
@@ -96,7 +96,7 @@ The Responses API supports structured outputs and reasoning control. It accepts 
 ```bash
 curl -X POST http://localhost:8787/v1/responses \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4.1",
     "input": "Tell me a three sentence bedtime story about a unicorn.",
@@ -109,7 +109,7 @@ curl -X POST http://localhost:8787/v1/responses \
 ```bash
 curl -X POST http://localhost:8787/v1/responses \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4.1",
     "messages": [
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8787/v1/responses \
 ```bash
 curl -X POST http://localhost:8787/v1/responses \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4.1",
     "input": "Analyze the benefits of exercise",
@@ -143,7 +143,7 @@ curl -X POST http://localhost:8787/v1/responses \
 ```bash
 curl -X POST http://localhost:8787/v1/responses \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4.1",
     "input": "Create a user profile for John Doe, age 30, software engineer",
@@ -260,6 +260,14 @@ wrangler kv:namespace create "RATE_LIMIT_STORE"
 ]
 ```
 
+6. Set up authentication (optional but recommended for production):
+
+```bash
+wrangler secret put AUTH_TOKEN
+```
+
+Enter your desired authentication token when prompted. This token will be required in the `Authorization: Bearer <token>` header for all API requests.
+
 ### Development
 
 Start the development server:
@@ -326,8 +334,18 @@ If you encounter issues during deployment:
 
 ### Environment Variables
 
-- `ONEMIN_CHAT_API_URL`: 1min.ai chat completions API endpoint
-- `ONEMIN_IMAGE_API_URL`: 1min.ai image generation API endpoint
+The following environment variables are configured in `wrangler.jsonc`:
+
+- `ONE_MIN_API_URL`: 1min.ai API endpoint for features
+- `ONE_MIN_CONVERSATION_API_URL`: 1min.ai conversation API endpoint  
+- `ONE_MIN_CONVERSATION_API_STREAMING_URL`: 1min.ai streaming API endpoint
+- `ONE_MIN_ASSET_URL`: 1min.ai asset API endpoint
+
+### Secrets
+
+The following secrets should be set using `wrangler secret put`:
+
+- `AUTH_TOKEN`: Authentication token required for API access (optional, if not set any Bearer token will be accepted)
 
 ### KV Namespace
 
@@ -340,7 +358,7 @@ If you encounter issues during deployment:
 ```bash
 curl -X POST https://your-worker.your-subdomain.workers.dev/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}],
@@ -353,7 +371,7 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/v1/chat/completions 
 ```bash
 curl -X POST https://your-worker.your-subdomain.workers.dev/v1/responses \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4.1",
     "input": "Analyze the benefits of renewable energy",
@@ -369,7 +387,7 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/v1/responses \
 ```bash
 curl -X POST https://your-worker.your-subdomain.workers.dev/v1/images/generations \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "dall-e-3",
     "prompt": "A beautiful sunset over mountains",
@@ -383,7 +401,7 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/v1/images/generation
 ```bash
 curl -X POST https://your-worker.your-subdomain.workers.dev/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
+  -H "Authorization: Bearer your-auth-token" \
   -d '{
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Tell me a story"}],

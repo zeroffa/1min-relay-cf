@@ -6,4 +6,6 @@ export * from "./tokens";
 export * from "./image";
 export * from "./response";
 export * from "./model-parser";
+export * from "./model-capabilities";
 export * from "./errors";
+export * from "./function-calling";

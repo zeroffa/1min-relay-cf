@@ -13,6 +13,11 @@ import {
   ChatCompletionStreamChunk,
   OneMinResponse,
   OneMinStreamChunk,
+  ChatCompletionRequestWithTools,
+  Tool,
+  FunctionDefinition,
+  ToolCall,
+  FunctionCall,
 } from "../types";
 import { OneMinApiService } from "../services";
 import {
@@ -23,11 +28,15 @@ import {
   WebSearchConfig,
   ValidationError,
   ModelNotFoundError,
+  convertToolsToSystemPrompt,
+  injectFunctionSystemPrompt,
+  parseFunctionCallsFromResponse,
+  hasFunctionCallingParams,
+  transformResponseWithFunctionCalls,
+  transformStreamChunkWithFunctionCalls,
 } from "../utils";
-import {
-  extractImageFromContent,
-  isVisionSupportedModel,
-} from "../utils/image";
+import { extractImageFromContent } from "../utils/image";
+import { supportsVision } from "../utils/model-capabilities";
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from "../constants";
 
 export class ChatHandler {
@@ -41,7 +50,7 @@ export class ChatHandler {
 
   async handleChatCompletions(request: Request): Promise<Response> {
     try {
-      const requestBody: ChatCompletionRequest = await request.json();
+      const requestBody: ChatCompletionRequestWithTools = await request.json();
       return await this.handleChatCompletionsWithBody(requestBody, "");
     } catch (error) {
       console.error("Chat completion error:", error);
@@ -50,7 +59,7 @@ export class ChatHandler {
   }
 
   async handleChatCompletionsWithBody(
-    requestBody: ChatCompletionRequest,
+    requestBody: ChatCompletionRequestWithTools,
     apiKey: string
   ): Promise<Response> {
     try {
@@ -84,7 +93,7 @@ export class ChatHandler {
 
       // Check for images and validate vision model support
       const hasImages = this.checkForImages(requestBody.messages as Message[]);
-      if (hasImages && !isVisionSupportedModel(cleanModel)) {
+      if (hasImages && !supportsVision(cleanModel)) {
         return createErrorResponse(
           `Model '${cleanModel}' does not support image inputs`,
           400,
@@ -94,9 +103,23 @@ export class ChatHandler {
       }
 
       // Process messages and extract images if any
-      const processedMessages = this.processMessages(
+      let processedMessages = this.processMessages(
         requestBody.messages as Message[]
       );
+
+      // Handle function calling by injecting system prompt
+      if (hasFunctionCallingParams(requestBody)) {
+        const functionSystemPrompt = convertToolsToSystemPrompt(
+          requestBody.tools,
+          requestBody.functions,
+          requestBody.tool_choice,
+          requestBody.function_call
+        );
+        processedMessages = injectFunctionSystemPrompt(
+          processedMessages,
+          functionSystemPrompt
+        );
+      }
 
       // Handle streaming vs non-streaming
       if (requestBody.stream) {
@@ -106,7 +129,8 @@ export class ChatHandler {
           requestBody.temperature,
           requestBody.max_tokens,
           apiKey,
-          webSearchConfig
+          webSearchConfig,
+          hasFunctionCallingParams(requestBody)
         );
       } else {
         return this.handleNonStreamingChat(
@@ -115,7 +139,8 @@ export class ChatHandler {
           requestBody.temperature,
           requestBody.max_tokens,
           apiKey,
-          webSearchConfig
+          webSearchConfig,
+          hasFunctionCallingParams(requestBody)
         );
       }
     } catch (error) {
@@ -178,7 +203,8 @@ export class ChatHandler {
     temperature?: number,
     maxTokens?: number,
     apiKey?: string,
-    webSearchConfig?: WebSearchConfig
+    webSearchConfig?: WebSearchConfig,
+    hasFunctionCalling: boolean = false
   ): Promise<Response> {
     try {
       const requestBody = await this.apiService.buildChatRequestBody(
@@ -198,7 +224,26 @@ export class ChatHandler {
       const data = (await response.json()) as OneMinResponse;
 
       // Transform response to OpenAI format
-      const openAIResponse = this.transformToOpenAIFormat(data, model);
+      let openAIResponse = this.transformToOpenAIFormat(data, model);
+
+      // Parse function calls if function calling is enabled
+      if (hasFunctionCalling && openAIResponse.choices && openAIResponse.choices.length > 0) {
+        const choice = openAIResponse.choices[0];
+        if (choice && choice.message) {
+          const content = choice.message.content || "";
+          const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(content);
+
+          if (toolCalls?.length || functionCall) {
+            choice.message.content = cleanContent;
+            openAIResponse = transformResponseWithFunctionCalls(
+              openAIResponse,
+              toolCalls,
+              functionCall
+            );
+          }
+        }
+      }
+
       return createSuccessResponse(openAIResponse);
     } catch (error) {
       console.error("Non-streaming chat error:", error);
@@ -212,7 +257,8 @@ export class ChatHandler {
     temperature?: number,
     maxTokens?: number,
     apiKey?: string,
-    webSearchConfig?: WebSearchConfig
+    webSearchConfig?: WebSearchConfig,
+    hasFunctionCalling: boolean = false
   ): Promise<Response> {
     try {
       const requestBody = await this.apiService.buildStreamingChatRequestBody(
@@ -253,6 +299,8 @@ export class ChatHandler {
         try {
           const decoder = new TextDecoder();
           const encoder = new TextEncoder();
+          let accumulatedContent = "";
+          let functionCallsSent = false;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -260,26 +308,125 @@ export class ChatHandler {
 
             const chunk = decoder.decode(value);
 
-            // Format chunk as OpenAI SSE
-            const returnChunk: ChatCompletionStreamChunk = {
-              id: `chatcmpl-${crypto.randomUUID()}`,
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: model,
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    content: chunk,
-                  },
-                  finish_reason: null as string | null,
-                },
-              ],
-            };
+            // Accumulate content for function call parsing
+            if (hasFunctionCalling) {
+              accumulatedContent += chunk;
+            }
 
-            await writer.write(
-              encoder.encode(`data: ${JSON.stringify(returnChunk)}\n\n`)
-            );
+            // Check for function calls in accumulated content
+            if (hasFunctionCalling && !functionCallsSent) {
+              const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(accumulatedContent);
+
+              if (toolCalls?.length || functionCall) {
+                // Send function call chunk
+                const functionChunk: ChatCompletionStreamChunk = {
+                  id: `chatcmpl-${crypto.randomUUID()}`,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: model,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: toolCalls?.length ? { tool_calls: toolCalls } : { function_call: functionCall },
+                      finish_reason: null as string | null,
+                    },
+                  ],
+                };
+                await writer.write(
+                  encoder.encode(`data: ${JSON.stringify(functionChunk)}\n\n`)
+                );
+                functionCallsSent = true;
+
+                // Send clean content if any
+                if (cleanContent) {
+                  const contentChunk: ChatCompletionStreamChunk = {
+                    id: `chatcmpl-${crypto.randomUUID()}`,
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: model,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: { content: cleanContent },
+                        finish_reason: null as string | null,
+                      },
+                    ],
+                  };
+                  await writer.write(
+                    encoder.encode(`data: ${JSON.stringify(contentChunk)}\n\n`)
+                  );
+                }
+                continue;
+              }
+            }
+
+            // Send regular content chunk if no function calls
+            if (!hasFunctionCalling || !functionCallsSent) {
+              const returnChunk: ChatCompletionStreamChunk = {
+                id: `chatcmpl-${crypto.randomUUID()}`,
+                object: "chat.completion.chunk",
+                created: Math.floor(Date.now() / 1000),
+                model: model,
+                choices: [
+                  {
+                    index: 0,
+                    delta: {
+                      content: chunk,
+                    },
+                    finish_reason: null as string | null,
+                  },
+                ],
+              };
+
+              await writer.write(
+                encoder.encode(`data: ${JSON.stringify(returnChunk)}\n\n`)
+              );
+            }
+          }
+
+          // Parse final function calls if not yet sent
+          if (hasFunctionCalling && !functionCallsSent && accumulatedContent) {
+            const { cleanContent, toolCalls, functionCall } = parseFunctionCallsFromResponse(accumulatedContent);
+
+            if (toolCalls?.length || functionCall) {
+              // Send function call chunk
+              const functionChunk: ChatCompletionStreamChunk = {
+                id: `chatcmpl-${crypto.randomUUID()}`,
+                object: "chat.completion.chunk",
+                created: Math.floor(Date.now() / 1000),
+                model: model,
+                choices: [
+                  {
+                    index: 0,
+                    delta: toolCalls?.length ? { tool_calls: toolCalls } : { function_call: functionCall },
+                    finish_reason: null as string | null,
+                  },
+                ],
+              };
+              await writer.write(
+                encoder.encode(`data: ${JSON.stringify(functionChunk)}\n\n`)
+              );
+
+              // Send clean content if any
+              if (cleanContent) {
+                const contentChunk: ChatCompletionStreamChunk = {
+                  id: `chatcmpl-${crypto.randomUUID()}`,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: model,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { content: cleanContent },
+                      finish_reason: null as string | null,
+                    },
+                  ],
+                };
+                await writer.write(
+                  encoder.encode(`data: ${JSON.stringify(contentChunk)}\n\n`)
+                );
+              }
+            }
           }
 
           // Send final chunk
@@ -292,7 +439,7 @@ export class ChatHandler {
               {
                 index: 0,
                 delta: {},
-                finish_reason: "stop",
+                finish_reason: hasFunctionCalling && functionCallsSent ? "tool_calls" : "stop",
               },
             ],
           };
