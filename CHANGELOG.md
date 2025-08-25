@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.3] - 2025-08-20
+
+### Fixed
+- **UTF-8 Encoding Issue in Streaming Responses**: Fixed garbled Chinese characters in streaming chat responses
+  - Multi-byte UTF-8 characters (Chinese, Japanese, etc.) were being split across chunk boundaries
+  - Implemented `SimpleUTF8Decoder` with proper stream handling to preserve character integrity
+  - Characters like `設定檔` no longer appear as `設定�` or `��` in streaming responses
+
+### Added
+- **UTF-8 Safe Decoder Utility**: New `src/utils/utf8-decoder.ts` module
+  - `SimpleUTF8Decoder` class with proper stream handling for incomplete UTF-8 sequences
+  - Prevents replacement characters (�) from appearing in multi-byte text
+
+### Changed
+- **Streaming Response Processing**: Updated chat handler to use UTF-8 safe decoding
+  - Replaced standard `TextDecoder` with `SimpleUTF8Decoder` in streaming mode
+  - Maintains character boundary integrity across chunk splits
+
+### Removed
+- **Debug Logging**: Removed extensive debug logging from production code
+  - Cleaned up console.log statements in onemin-api.ts and chat.ts
+  - Improved performance and reduced noise in production logs
+
+### Technical Details
+- The issue occurred because `TextDecoder.decode()` without `stream: true` treats each chunk independently
+- Multi-byte UTF-8 characters split across chunks resulted in replacement characters
+- New decoder uses `stream: true` option to properly handle incomplete byte sequences
+
 ## [3.5.2] - 2025-08-20
 
 ### Changed

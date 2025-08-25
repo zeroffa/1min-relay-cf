@@ -4,9 +4,7 @@
 
 import {
   Env,
-  ChatCompletionRequest,
   Message,
-  MessageContent,
   TextContent,
   ImageContent,
   ChatCompletionResponse,
@@ -14,10 +12,6 @@ import {
   OneMinResponse,
   OneMinStreamChunk,
   ChatCompletionRequestWithTools,
-  Tool,
-  FunctionDefinition,
-  ToolCall,
-  FunctionCall,
 } from "../types";
 import { OneMinApiService } from "../services";
 import {
@@ -26,17 +20,16 @@ import {
   createErrorResponseFromError,
   ModelParser,
   WebSearchConfig,
-  ValidationError,
   ModelNotFoundError,
   convertToolsToSystemPrompt,
   injectFunctionSystemPrompt,
   parseFunctionCallsFromResponse,
   hasFunctionCallingParams,
   transformResponseWithFunctionCalls,
-  transformStreamChunkWithFunctionCalls,
 } from "../utils";
 import { extractImageFromContent } from "../utils/image";
 import { supportsVision } from "../utils/model-capabilities";
+import { SimpleUTF8Decoder } from "../utils/utf8-decoder";
 import { ALL_ONE_MIN_AVAILABLE_MODELS, DEFAULT_MODEL } from "../constants";
 
 export class ChatHandler {
@@ -297,16 +290,24 @@ export class ChatHandler {
       // Start streaming process (don't await, let it run in background)
       (async () => {
         try {
-          const decoder = new TextDecoder();
+          // Use UTF-8 safe decoder to handle multi-byte characters
+          const utf8Decoder = new SimpleUTF8Decoder();
           const encoder = new TextEncoder();
           let accumulatedContent = "";
           let functionCallsSent = false;
+          let chunkCount = 0;
+          let totalChars = 0;
+
+          console.log("=== 1MIN.AI STREAMING RESPONSE START ====");
+          console.log("Model:", model);
+          console.log("Using UTF-8 safe decoder");
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
+            // Decode with UTF-8 safety (handles incomplete sequences)
+            const chunk = utf8Decoder.decode(value, done);
 
             // Accumulate content for function call parsing
             if (hasFunctionCalling) {
