@@ -9,7 +9,6 @@ export const ALL_ONE_MIN_AVAILABLE_MODELS = [
   "gpt-5-mini",
   "gpt-5-nano",
   "gpt-5-chat-latest",
-  "o1-pro",
   "o1-preview",
   "o1",
   "o1-mini",
