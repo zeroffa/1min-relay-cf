@@ -7,17 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.5] - 2025-09-01
+
+### Fixed
+- **Model List Correction**: Removed `o1-preview` model from supported models list
+  - `o1-preview` model is no longer available in the 1min.ai API
+  - Updated both main model list and retrieval-supported models list
+  - Corrected README.md to reflect current model availability
+
+### Changed
+- **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` and `RETRIEVAL_SUPPORTED_MODELS` to reflect accurate model availability
+  - Removed: `o1-preview` (no longer available)
+  - Retained: `o1`, `o1-mini` (currently available o1 series models)
+
 ## [3.5.4] - 2025-08-20
 
 ### Fixed
 - **Model List Correction**: Removed non-existent `o1-pro` model from supported models list
-  - OpenAI's o1 series only includes: `o1-preview`, `o1`, and `o1-mini`
+  - OpenAI's o1 series only includes: `o1`, and `o1-mini`
   - No `o1-pro` model exists in OpenAI's official API
 
 ### Changed
 - **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to reflect accurate OpenAI model availability
   - Removed: `o1-pro` (non-existent model)
-  - Retained: `o1-preview`, `o1`, `o1-mini` (official o1 series models)
+  - Retained: `o1`, `o1-mini` (official o1 series models)
 
 ## [3.5.3] - 2025-08-20
 
