@@ -45,7 +45,7 @@
 	"kv_namespaces": [
 		{
 		  "binding": "RATE_LIMIT_STORE",
-		  "id": "1min-relay-cfz" // IMPORTANT: Change this to your KV namespace ID
+		  "id": "1min-relay-cf" // IMPORTANT: Change this to your KV namespace ID
 		}
 	  ],
 
