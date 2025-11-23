@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.6.3] - 2025-10-12
+## [3.6.4] - 2025-11-23
+
+### Changed
+- **Code Refactoring**: Extracted shared message processing methods to common utility
+  - Created `src/utils/message-processing.ts` with reusable functions
+  - `checkForImages()` - Check if messages contain images
+  - `processMessages()` - Process and convert image format for API
+  - `parseAndValidateModel()` - Parse and validate model names
+  - Reduced code duplication between `chat.ts` and `responses.ts`
+
+### Removed
+- **Unused Variables**: Removed unused `chunkCount` and `totalChars` variables in streaming handler
+- **Debug Logs**: Removed unnecessary production logging in chat and image handlers
+  - Removed streaming response start logs
+  - Removed image request/response debug logs
+
+### Fixed
+- **Code Quality**: Improved maintainability by centralizing shared logic
+
+## [3.6.3] - 2025-11-23
 
 ### Added
 - **New Claude Models Support**:
@@ -19,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to include new Claude models
 - **Retrieval Support**: Added new Claude models to `RETRIEVAL_SUPPORTED_MODELS` list
 
-## [3.6.2] - 2025-10-12
+## [3.6.2] - 2025-11-23
 
 ### Added
 - **Vision Support for Grok 4 Fast Models**:
@@ -31,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vision Models**: Added Grok 4 fast models to `VISION_SUPPORTED_MODELS` list
 - **Documentation**: Updated README to reflect new vision-capable models
 
-## [3.6.1] - 2025-10-12
+## [3.6.1] - 2025-11-23
 
 ### Added
 - **New xAI Grok 4 Fast Models Support**:
