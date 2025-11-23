@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.3] - 2025-10-12
+
+### Added
+- **New Claude Models Support**:
+  - `claude-haiku-4-5-20251001` - Latest Claude Haiku 4.5 model
+  - `claude-sonnet-4-5-20250929` - Latest Claude Sonnet 4.5 model
+  - Both models support web search/retrieval functionality (`:online` suffix)
+
+### Changed
+- **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to include new Claude models
+- **Retrieval Support**: Added new Claude models to `RETRIEVAL_SUPPORTED_MODELS` list
+
 ## [3.6.2] - 2025-10-12
 
 ### Added
