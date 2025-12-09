@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.5] - 2025-11-23
+
+### Added
+- **New OpenAI GPT-5.1 Models Support**:
+  - `gpt-5.1` - Latest GPT-5.1 model
+  - `gpt-5.1-codex` - GPT-5.1 model specialized for coding
+  - `gpt-5.1-codex-mini` - Lightweight GPT-5.1 coding model
+  - All models support web search/retrieval functionality (`:online` suffix)
+- **New Google Gemini Model Support**:
+  - `gemini-3-pro-preview` - Preview version of Gemini 3 Pro model
+  - Supports web search/retrieval functionality (`:online` suffix)
+
+### Changed
+- **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to include new OpenAI and Google models
+- **Retrieval Support**: Added new models to `RETRIEVAL_SUPPORTED_MODELS` list
+
 ## [3.6.4] - 2025-11-23
 
 ### Changed
