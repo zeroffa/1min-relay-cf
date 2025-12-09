@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.7] - 2025-11-23
+
+### Changed
+- **Model List Organization**: Sorted all model lists alphabetically within each provider category
+  - `ALL_ONE_MIN_AVAILABLE_MODELS` - All models sorted alphabetically per provider
+  - `VISION_SUPPORTED_MODELS` - Vision models sorted alphabetically
+  - `CODE_INTERPRETER_SUPPORTED_MODELS` - Code interpreter models sorted alphabetically
+  - `RETRIEVAL_SUPPORTED_MODELS` - Web search models sorted alphabetically
+  - `FUNCTION_CALLING_SUPPORTED_MODELS` - Function calling models sorted alphabetically
+  - `IMAGE_GENERATION_MODELS` - Image generation models sorted alphabetically
+  - `VARIATION_SUPPORTED_MODELS` - Image variation models sorted alphabetically
+  - Improved code readability and maintainability
+
+## [3.6.6] - 2025-11-23
+
+### Added
+- **New Claude Model Support**:
+  - `claude-opus-4-5-20251101` - Latest Claude Opus 4.5 model
+  - Supports web search/retrieval functionality (`:online` suffix)
+
+### Changed
+- **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to include new Claude model
+- **Retrieval Support**: Added new Claude model to `RETRIEVAL_SUPPORTED_MODELS` list
+
+## [3.6.5] - 2025-11-23
+
+### Added
+- **New OpenAI GPT-5.1 Models Support**:
+  - `gpt-5.1` - Latest GPT-5.1 model
+  - `gpt-5.1-codex` - GPT-5.1 model specialized for coding
+  - `gpt-5.1-codex-mini` - Lightweight GPT-5.1 coding model
+  - All models support web search/retrieval functionality (`:online` suffix)
+- **New Google Gemini Model Support**:
+  - `gemini-3-pro-preview` - Preview version of Gemini 3 Pro model
+  - Supports web search/retrieval functionality (`:online` suffix)
+
+### Changed
+- **Model Constants**: Updated `ALL_ONE_MIN_AVAILABLE_MODELS` to include new OpenAI and Google models
+- **Retrieval Support**: Added new models to `RETRIEVAL_SUPPORTED_MODELS` list
+
 ## [3.6.4] - 2025-11-23
 
 ### Changed
