@@ -3,6 +3,7 @@
  * with two-tier caching: in-memory (5min) + KV (1hr)
  */
 
+import { FALLBACK_SPEECH_MODEL_IDS } from "../constants/config";
 import type { CachedModelData, Env, OneMinModelEntry } from "../types";
 import { ApiError } from "../utils/errors";
 
@@ -27,6 +28,7 @@ function isValidCachedData(data: unknown): data is CachedModelData {
 function processModels(
   chatModels: OneMinModelEntry[],
   imageModels: OneMinModelEntry[],
+  speechModels: OneMinModelEntry[],
 ): CachedModelData {
   // Deduplicate by modelId (chat models take priority)
   const seen = new Set<string>();
@@ -44,6 +46,12 @@ function processModels(
       allEntries.push(model);
     }
   }
+  for (const model of speechModels) {
+    if (!seen.has(model.modelId)) {
+      seen.add(model.modelId);
+      allEntries.push(model);
+    }
+  }
 
   const chatModelIds = chatModels.map((m) => m.modelId);
   const imageModelIds = imageModels.map((m) => m.modelId);
@@ -56,11 +64,18 @@ function processModels(
     .filter((m) => m.features.includes("CODE_GENERATOR"))
     .map((m) => m.modelId);
 
+  // Use API-fetched speech models, falling back to hardcoded list if empty
+  const speechModelIds =
+    speechModels.length > 0
+      ? speechModels.map((m) => m.modelId)
+      : [...FALLBACK_SPEECH_MODEL_IDS];
+
   return {
     chatModelIds,
     imageModelIds,
     visionModelIds,
     codeInterpreterModelIds,
+    speechModelIds,
     entries: allEntries,
     fetchedAt: Date.now(),
   };
@@ -97,12 +112,15 @@ async function fetchModelsFromAPI(
 }
 
 async function fetchAndProcess(env: Env): Promise<CachedModelData> {
-  const [chatModels, imageModels] = await Promise.all([
+  const [chatModels, imageModels, speechModels] = await Promise.all([
     fetchModelsFromAPI(env.ONE_MIN_MODELS_API_URL, "UNIFY_CHAT_WITH_AI"),
     fetchModelsFromAPI(env.ONE_MIN_MODELS_API_URL, "IMAGE_GENERATOR"),
+    fetchModelsFromAPI(env.ONE_MIN_MODELS_API_URL, "SPEECH_TO_TEXT").catch(
+      () => [] as OneMinModelEntry[],
+    ),
   ]);
 
-  return processModels(chatModels, imageModels);
+  return processModels(chatModels, imageModels, speechModels);
 }
 
 /**
@@ -176,8 +194,11 @@ export async function getModelData(env: Env): Promise<CachedModelData> {
  */
 export async function isValidModel(model: string, env: Env): Promise<boolean> {
   const data = await getModelData(env);
+  const speechIds = data.speechModelIds ?? FALLBACK_SPEECH_MODEL_IDS;
   return (
-    data.chatModelIds.includes(model) || data.imageModelIds.includes(model)
+    data.chatModelIds.includes(model) ||
+    data.imageModelIds.includes(model) ||
+    speechIds.includes(model)
   );
 }
 
@@ -217,4 +238,13 @@ export async function isImageGenerationModel(
 export async function isChatModel(model: string, env: Env): Promise<boolean> {
   const data = await getModelData(env);
   return data.chatModelIds.includes(model);
+}
+
+/**
+ * Check if a model supports speech-to-text
+ */
+export async function isSpeechModel(model: string, env: Env): Promise<boolean> {
+  const data = await getModelData(env);
+  const speechIds = data.speechModelIds ?? FALLBACK_SPEECH_MODEL_IDS;
+  return speechIds.includes(model);
 }
