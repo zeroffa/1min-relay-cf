@@ -293,6 +293,7 @@ export class OneMinApiService {
     language?: string,
     responseFormat?: string,
     prompt?: string,
+    temperature?: number,
   ): OneMinRequestBody {
     const isWhisperModel = WHISPER_MODEL_IDS.has(model);
 
@@ -306,8 +307,11 @@ export class OneMinApiService {
       if (language) {
         promptObject.language = language;
       }
+      if (temperature !== undefined) {
+        promptObject.temperature = temperature;
+      }
     } else {
-      // Google Speech models use language instead of response_format
+      // Google Speech models use language instead of response_format/temperature
       if (language) {
         promptObject.language = language;
       }

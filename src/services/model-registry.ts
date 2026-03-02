@@ -3,7 +3,10 @@
  * with two-tier caching: in-memory (5min) + KV (1hr)
  */
 
-import { FALLBACK_SPEECH_MODEL_IDS } from "../constants/config";
+import {
+  AUDIO_TRANSLATION_MODEL_IDS,
+  FALLBACK_SPEECH_MODEL_IDS,
+} from "../constants/config";
 import type { CachedModelData, Env, OneMinModelEntry } from "../types";
 import { ApiError } from "../utils/errors";
 
@@ -247,4 +250,12 @@ export async function isSpeechModel(model: string, env: Env): Promise<boolean> {
   const data = await getModelData(env);
   const speechIds = data.speechModelIds ?? FALLBACK_SPEECH_MODEL_IDS;
   return speechIds.includes(model);
+}
+
+/**
+ * Check if a model supports audio translation (translate to English).
+ * Currently only whisper-1 supports this via 1min.ai's AUDIO_TRANSLATOR.
+ */
+export function isAudioTranslationModel(model: string): boolean {
+  return AUDIO_TRANSLATION_MODEL_IDS.has(model);
 }

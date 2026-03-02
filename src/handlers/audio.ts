@@ -2,7 +2,10 @@
  * Audio transcription and translation endpoint handler
  */
 
-import { isSpeechModel } from "../services/model-registry";
+import {
+  isAudioTranslationModel,
+  isSpeechModel,
+} from "../services/model-registry";
 import type { AudioResponseFormat, OneMinChatResponse } from "../types";
 import {
   type AudioData,
@@ -22,7 +25,7 @@ export class AudioHandler extends BaseTextHandler {
   ): Promise<Response> {
     const parsed = await parseAudioFormData(request);
 
-    validateAudioFile(parsed.file);
+    await validateAudioFile(parsed.file);
 
     if (!(await isSpeechModel(parsed.model, this.env))) {
       throw new ValidationError(
@@ -40,6 +43,7 @@ export class AudioHandler extends BaseTextHandler {
       parsed.language,
       parsed.responseFormat,
       parsed.prompt,
+      parsed.temperature,
     );
 
     const data = await this.apiService.sendAudioRequest(requestBody, apiKey);
@@ -50,11 +54,11 @@ export class AudioHandler extends BaseTextHandler {
   async handleTranslation(request: Request, apiKey: string): Promise<Response> {
     const parsed = await parseAudioFormData(request);
 
-    validateAudioFile(parsed.file);
+    await validateAudioFile(parsed.file);
 
-    if (!(await isSpeechModel(parsed.model, this.env))) {
+    if (!isAudioTranslationModel(parsed.model)) {
       throw new ValidationError(
-        `Model '${parsed.model}' does not support audio translation`,
+        `Model '${parsed.model}' does not support audio translation. Only whisper-1 is supported for translation.`,
         "model",
         "model_not_supported",
       );
@@ -97,11 +101,13 @@ export class AudioHandler extends BaseTextHandler {
   ): Response {
     const text = extractOneMinContent(data);
 
-    if (
-      responseFormat === "text" ||
-      responseFormat === "srt" ||
-      responseFormat === "vtt"
-    ) {
+    if (responseFormat === "vtt") {
+      return new Response(text, {
+        headers: { "Content-Type": "text/vtt; charset=utf-8" },
+      });
+    }
+
+    if (responseFormat === "srt" || responseFormat === "text") {
       return new Response(text, {
         headers: { "Content-Type": "text/plain; charset=utf-8" },
       });

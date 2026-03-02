@@ -29,8 +29,12 @@ export const SUPPORTED_AUDIO_MIME_TYPES = new Set([
   "audio/x-wav",
 ]);
 
-// Whisper model IDs (uses response_format in promptObject)
+// Whisper model IDs (uses response_format/temperature in promptObject)
 export const WHISPER_MODEL_IDS = new Set(["whisper-1"]);
+
+// Models that support audio translation (AUDIO_TRANSLATOR feature)
+// Currently only whisper-1 supports translation to English
+export const AUDIO_TRANSLATION_MODEL_IDS = new Set(["whisper-1"]);
 
 // Hardcoded fallback for speech models (in case the API doesn't return them)
 export const FALLBACK_SPEECH_MODEL_IDS = [

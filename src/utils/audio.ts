@@ -28,6 +28,56 @@ const AUDIO_MIME_TO_EXT: Record<string, string> = {
   "audio/flac": ".flac",
 };
 
+// File extensions that are accepted for audio uploads
+const SUPPORTED_AUDIO_EXTENSIONS = new Set([
+  ".mp3",
+  ".mp4",
+  ".m4a",
+  ".wav",
+  ".webm",
+  ".ogg",
+  ".flac",
+  ".mpeg",
+]);
+
+// MIME types that should be treated as "unknown" (pass through to extension check)
+const PASSTHROUGH_MIME_TYPES = new Set([
+  "application/octet-stream",
+  "application/x-www-form-urlencoded",
+]);
+
+// Magic bytes for common audio formats
+const AUDIO_MAGIC_BYTES: ReadonlyArray<{
+  bytes: number[];
+  offset: number;
+  format: string;
+}> = [
+  { bytes: [0x49, 0x44, 0x33], offset: 0, format: "mp3" }, // ID3 tag
+  { bytes: [0xff, 0xfb], offset: 0, format: "mp3" }, // MP3 sync word
+  { bytes: [0xff, 0xf3], offset: 0, format: "mp3" }, // MP3 sync word
+  { bytes: [0xff, 0xf2], offset: 0, format: "mp3" }, // MP3 sync word
+  { bytes: [0x52, 0x49, 0x46, 0x46], offset: 0, format: "wav" }, // RIFF header
+  { bytes: [0x66, 0x4c, 0x61, 0x43], offset: 0, format: "flac" }, // fLaC
+  { bytes: [0x4f, 0x67, 0x67, 0x53], offset: 0, format: "ogg" }, // OggS
+  { bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0, format: "webm" }, // EBML (webm/mkv)
+];
+
+function extractExtensionFromFilename(filename: string): string | null {
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot === -1) return null;
+  return filename.slice(lastDot).toLowerCase();
+}
+
+function matchesMagicBytes(data: ArrayBuffer): boolean {
+  if (data.byteLength < 4) return false;
+  const view = new Uint8Array(data, 0, Math.min(12, data.byteLength));
+
+  return AUDIO_MAGIC_BYTES.some(({ bytes, offset }) => {
+    if (offset + bytes.length > view.length) return false;
+    return bytes.every((b, i) => view[offset + i] === b);
+  });
+}
+
 const VALID_RESPONSE_FORMATS = new Set<string>([
   "json",
   "text",
@@ -45,9 +95,10 @@ export function audioMimeToExtension(mimeType: string): string {
 }
 
 /**
- * Validates an audio file's size and MIME type
+ * Validates an audio file's size, MIME type, and extension.
+ * Uses a layered approach: MIME → extension → magic bytes fallback.
  */
-export function validateAudioFile(file: File): void {
+export async function validateAudioFile(file: File): Promise<void> {
   if (file.size > MAX_AUDIO_FILE_SIZE) {
     throw new ValidationError(
       `File size ${(file.size / (1024 * 1024)).toFixed(1)}MB exceeds maximum of 25MB`,
@@ -55,13 +106,41 @@ export function validateAudioFile(file: File): void {
     );
   }
 
-  // Check MIME type if available (some clients may not set it)
-  if (file.type && !SUPPORTED_AUDIO_MIME_TYPES.has(file.type)) {
+  const mime = file.type;
+  const ext = extractExtensionFromFilename(file.name);
+
+  // Known audio MIME → accept
+  if (mime && SUPPORTED_AUDIO_MIME_TYPES.has(mime)) {
+    return;
+  }
+
+  // Known audio extension → accept (covers octet-stream / empty MIME)
+  if (ext && SUPPORTED_AUDIO_EXTENSIONS.has(ext)) {
+    return;
+  }
+
+  // Passthrough MIME with no extension info → check magic bytes
+  if (!mime || PASSTHROUGH_MIME_TYPES.has(mime)) {
+    const header = file.slice(0, 12);
+    const buffer = await header.arrayBuffer();
+    if (matchesMagicBytes(buffer)) {
+      return;
+    }
+  }
+
+  // Explicit non-audio MIME → reject
+  if (mime && !PASSTHROUGH_MIME_TYPES.has(mime)) {
     throw new ValidationError(
-      `Unsupported audio format: ${file.type}. Supported formats: mp3, mp4, m4a, wav, webm, ogg, flac`,
+      `Unsupported audio format: ${mime}. Supported formats: mp3, mp4, m4a, wav, webm, ogg, flac`,
       "file",
     );
   }
+
+  // No MIME, no extension, no magic bytes → reject
+  throw new ValidationError(
+    "Could not determine audio format. Please provide a file with a supported extension (mp3, mp4, m4a, wav, webm, ogg, flac).",
+    "file",
+  );
 }
 
 /**
