@@ -60,11 +60,7 @@ function processModels(
   const imageModelIds = imageModels.map((m) => m.modelId);
 
   const visionModelIds = chatModels
-    .filter(
-      (m) =>
-        m.modality?.INPUT?.includes("image") ||
-        m.features.includes("CHAT_WITH_IMAGE"),
-    )
+    .filter((m) => m.modality?.INPUT?.includes("image"))
     .map((m) => m.modelId);
 
   const codeInterpreterModelIds = chatModels
@@ -210,7 +206,7 @@ export async function isValidModel(model: string, env: Env): Promise<boolean> {
 }
 
 /**
- * Check if a model supports vision (CHAT_WITH_IMAGE feature)
+ * Check if a model supports vision (modality.INPUT includes "image")
  */
 export async function isVisionModel(model: string, env: Env): Promise<boolean> {
   const data = await getModelData(env);
