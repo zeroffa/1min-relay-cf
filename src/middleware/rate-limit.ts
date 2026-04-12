@@ -68,7 +68,7 @@ export class RateLimiter {
     request: Request,
     tokenCount: number = 0,
   ): Promise<{ allowed: boolean }> {
-    const clientId = getClientId(request);
+    const clientId = await getClientId(request);
     return this.checkRateLimit(clientId, tokenCount);
   }
 }
@@ -76,10 +76,18 @@ export class RateLimiter {
 /**
  * Extract client identifier from request headers for rate limiting.
  */
-export function getClientId(request: Request): string {
+export async function getClientId(request: Request): Promise<string> {
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
-    return `auth:${authHeader.substring(0, 20)}`;
+    const hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(authHeader),
+    );
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 16);
+    return `auth:${hashHex}`;
   }
 
   const cfConnectingIp = request.headers.get("CF-Connecting-IP");

@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { corsMiddleware } from "./middleware/cors";
-import { errorHandler } from "./middleware/error-handler";
 import apiRoutes from "./routes/api";
-// Logger middleware removed for production
 import rootRoutes from "./routes/root";
 import { getModelData } from "./services/model-registry";
 import type { HonoEnv } from "./types/hono";
@@ -19,8 +17,6 @@ import {
 
 const app = new Hono<HonoEnv>();
 
-// Global error handler must be first
-app.use("*", errorHandler);
 app.use("*", corsMiddleware);
 
 // Warm up model cache (non-blocking, won't delay the request)

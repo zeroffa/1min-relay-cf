@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { MEDIA_REQUEST_TOKEN_ESTIMATE } from "../constants/config";
 import { AudioHandler } from "../handlers";
 import { authMiddleware } from "../middleware/auth";
 import { createRateLimitMiddleware } from "../middleware/rate-limit-hono";
@@ -8,7 +9,9 @@ const app = new Hono<HonoEnv>();
 
 app.post("/transcriptions", authMiddleware, async (c) => {
   // Apply rate limiting with fixed token count for audio
-  const rateLimitMiddleware = createRateLimitMiddleware(1000);
+  const rateLimitMiddleware = createRateLimitMiddleware(
+    MEDIA_REQUEST_TOKEN_ESTIMATE,
+  );
   await rateLimitMiddleware(c, async () => {});
 
   const apiKey = c.get("apiKey");
@@ -23,7 +26,9 @@ app.post("/transcriptions", authMiddleware, async (c) => {
 });
 
 app.post("/translations", authMiddleware, async (c) => {
-  const rateLimitMiddleware = createRateLimitMiddleware(1000);
+  const rateLimitMiddleware = createRateLimitMiddleware(
+    MEDIA_REQUEST_TOKEN_ESTIMATE,
+  );
   await rateLimitMiddleware(c, async () => {});
 
   const apiKey = c.get("apiKey");

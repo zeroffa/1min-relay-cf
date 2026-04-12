@@ -13,7 +13,7 @@ export const createRateLimitMiddleware = (tokenCount: number = 0) => {
     }
 
     const rateLimitInfo: RateLimitInfo = {
-      clientId: getClientId(c.req.raw),
+      clientId: await getClientId(c.req.raw),
       tokenCount,
       allowed: result.allowed,
       requestCount: 1,

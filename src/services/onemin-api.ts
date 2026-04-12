@@ -44,6 +44,8 @@ function formatConversationHistory(
       formattedHistory += `Human: ${content}\n\n`;
     } else if (role === "assistant") {
       formattedHistory += `Assistant: ${content}\n\n`;
+    } else if (role === "tool" || role === "function") {
+      formattedHistory += `Tool: ${content}\n\n`;
     }
   }
 
@@ -371,9 +373,9 @@ export class OneMinApiService {
 
     if (!response.ok) {
       const rawError = await response.text().catch(() => "(unreadable)");
-      console.error("=== 1MIN.AI AUDIO API ERROR ===", rawError.slice(0, 500));
+      console.error("1min.ai audio API error:", rawError.slice(0, 500));
       throw new ApiError(
-        `1min.ai API error: ${response.status} ${response.statusText}`,
+        sanitizeUpstreamError(response.status),
         response.status,
       );
     }

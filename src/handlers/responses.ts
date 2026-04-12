@@ -332,12 +332,21 @@ export class ResponseHandler extends BaseTextHandler {
       );
       const existing = enhancedMessages[systemMessageIndex];
       if (systemMessageIndex >= 0 && existing) {
+        const existingText =
+          typeof existing.content === "string"
+            ? existing.content
+            : Array.isArray(existing.content)
+              ? existing.content
+                  .filter(
+                    (c): c is { type: "text"; text: string } =>
+                      c.type === "text",
+                  )
+                  .map((c) => c.text)
+                  .join("\n")
+              : "";
         enhancedMessages[systemMessageIndex] = {
           role: existing.role,
-          content:
-            typeof existing.content === "string"
-              ? `${existing.content}\n\n${structurePrompt}`
-              : existing.content,
+          content: `${existingText}\n\n${structurePrompt}`,
         };
       } else {
         enhancedMessages.unshift({

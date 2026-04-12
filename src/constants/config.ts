@@ -13,6 +13,9 @@ export const RATE_LIMIT_CONFIG = {
 export const DEFAULT_MODEL = "open-mistral-nemo";
 export const DEFAULT_IMAGE_MODEL = "black-forest-labs/flux-schnell";
 
+// Fixed token estimate for non-text requests (audio, image) in rate limiting
+export const MEDIA_REQUEST_TOKEN_ESTIMATE = 1000;
+
 // Audio file constraints (matching OpenAI's limits)
 export const MAX_AUDIO_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 

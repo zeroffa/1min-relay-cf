@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-04-12
+
+### Fixed
+- **SSRF prevention**: `processImageUrl` now rejects non-HTTPS URLs
+- **Error message sanitization**: `sendAudioRequest` uses `sanitizeUpstreamError()` instead of leaking upstream statusText
+- **Duplicate error handler**: Removed `errorHandler` middleware; `app.onError` is now the sole error handler with log-level classification
+- **Vision model detection**: Use `modality.INPUT.includes("image")` instead of deprecated `CHAT_WITH_IMAGE` feature flag
+- **Responses API structured prompts**: `enhanceMessagesForStructuredResponse` now handles array-format system message content
+- **Empty response handling**: `extractOneMinContent` returns empty string with warning instead of fake "No response generated" text
+- **Streaming error recovery**: Send error SSE event before closing stream instead of silent abort
+- **AuthenticationError.type**: Changed from `invalid_request_error` to `authentication_error` to match OpenAI spec
+
+### Changed
+- **Rate-limit key hashing**: Use SHA-256 hash of auth header instead of raw prefix to prevent bypass and avoid leaking key material in KV
+- **tool/function role support**: `formatConversationHistory` now includes tool and function role messages
+- **/v1/models authentication**: Added `authMiddleware` to models endpoint for consistency
+- **Cache validation**: `isValidCachedData` now also checks `entries` array is non-empty
+- **Media rate-limit constant**: Replaced magic number `1000` with `MEDIA_REQUEST_TOKEN_ESTIMATE`
+
+### Removed
+- **Dead code**: Deleted `src/utils/model-capabilities.ts` (duplicate of model-registry functions)
+- **Dead code**: Removed unused `createErrorResponse` and `createErrorResponseFromError` from response.ts
+
 ## [5.0.0] - 2026-04-12
 
 ### Changed

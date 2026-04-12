@@ -20,12 +20,18 @@ let memoryCache: CachedModelData | null = null;
 let memoryCacheExpiry = 0;
 
 // Deduplication: single inflight fetch shared across concurrent callers
+// Note: module-level state is per-isolate only; cross-isolate dedup relies on KV
 let inflight: Promise<CachedModelData> | null = null;
 
 function isValidCachedData(data: unknown): data is CachedModelData {
   if (!data || typeof data !== "object") return false;
   const d = data as Record<string, unknown>;
-  return Array.isArray(d.chatModelIds) && Array.isArray(d.imageModelIds);
+  return (
+    Array.isArray(d.chatModelIds) &&
+    Array.isArray(d.imageModelIds) &&
+    Array.isArray(d.entries) &&
+    d.entries.length > 0
+  );
 }
 
 function processModels(

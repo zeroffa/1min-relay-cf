@@ -6,6 +6,8 @@
 import { createSSEResponse } from "./sse";
 import { SimpleUTF8Decoder } from "./utf8-decoder";
 
+const encoder = new TextEncoder();
+
 export interface StreamingCallbacks {
   onStart?: (writer: WritableStreamDefaultWriter<Uint8Array>) => Promise<void>;
   onChunk: (
@@ -189,7 +191,18 @@ export function executeStreamingPipeline(
       await writer.close();
     } catch (error) {
       console.error("Streaming pipeline error:", error);
-      await writer.abort(error);
+      try {
+        const errorMessage =
+          error instanceof Error ? error.message : "Stream interrupted";
+        await writer.write(
+          encoder.encode(
+            `data: ${JSON.stringify({ error: { message: errorMessage, type: "server_error" } })}\n\n`,
+          ),
+        );
+        await writer.close();
+      } catch {
+        await writer.abort(error).catch(() => {});
+      }
     }
   })();
 

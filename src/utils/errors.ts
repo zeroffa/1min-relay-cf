@@ -17,7 +17,7 @@ export class ValidationError extends Error {
 }
 
 export class AuthenticationError extends Error {
-  public readonly type = "invalid_request_error";
+  public readonly type = "authentication_error";
   public readonly code = "invalid_api_key";
   public readonly param = "authorization";
   public readonly status = 401;

@@ -10,13 +10,15 @@ import type { ImageContent, MessageContent, TextContent } from "../types";
  * @returns boolean - True if URL is an image URL
  */
 export function isImageUrl(url: string): boolean {
-  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"];
-  const lowerUrl = url.toLowerCase();
-  return (
-    imageExtensions.some((ext) => lowerUrl.includes(ext)) ||
-    lowerUrl.includes("data:image/") ||
-    lowerUrl.includes("base64")
-  );
+  if (url.startsWith("data:image/")) return true;
+
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"];
+    return imageExtensions.some((ext) => pathname.endsWith(ext));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -83,7 +85,11 @@ export async function processImageUrl(imageUrl: string): Promise<ImageData> {
     }
     return { data: bytes.buffer, mimeType };
   } else {
-    // Handle HTTP URL
+    // Validate URL scheme to prevent SSRF
+    if (!imageUrl.startsWith("https://")) {
+      throw new Error("Only HTTPS image URLs are supported");
+    }
+
     const response = await fetch(imageUrl, {
       headers: {
         "User-Agent":

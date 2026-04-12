@@ -6,7 +6,6 @@ export * from "./audio";
 export * from "./errors";
 export * from "./image";
 export * from "./message-processing";
-export * from "./model-capabilities";
 export * from "./model-parser";
 export * from "./model-validation";
 export * from "./response";
