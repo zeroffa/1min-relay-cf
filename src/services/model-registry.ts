@@ -60,7 +60,11 @@ function processModels(
   const imageModelIds = imageModels.map((m) => m.modelId);
 
   const visionModelIds = chatModels
-    .filter((m) => m.features.includes("CHAT_WITH_IMAGE"))
+    .filter(
+      (m) =>
+        m.modality?.INPUT?.includes("image") ||
+        m.features.includes("CHAT_WITH_IMAGE"),
+    )
     .map((m) => m.modelId);
 
   const codeInterpreterModelIds = chatModels
