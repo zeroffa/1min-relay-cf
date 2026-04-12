@@ -19,9 +19,39 @@ export interface StreamingCallbacks {
 }
 
 /**
- * Execute a streaming pipeline with the given callbacks.
- * Handles TransformStream setup, UTF-8 decoding, chunk accumulation,
- * and writer lifecycle (close/abort).
+ * Parse SSE content events from 1min.ai streaming response.
+ * Extracts text content from `event: content\ndata: {"content":"..."}` lines.
+ * Falls back to treating raw text as content for backwards compatibility.
+ */
+function parseSSEChunks(text: string): string[] {
+  const chunks: string[] = [];
+  const lines = text.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+
+    // Parse SSE data lines
+    if (line.startsWith("data: ")) {
+      const dataStr = line.slice(6);
+      try {
+        const parsed = JSON.parse(dataStr) as Record<string, unknown>;
+        if (typeof parsed.content === "string" && parsed.content) {
+          chunks.push(parsed.content);
+        }
+      } catch {
+        // Not JSON — could be raw text or [DONE] marker, skip
+      }
+    }
+  }
+
+  return chunks;
+}
+
+/**
+ * Execute a streaming pipeline that parses SSE events from 1min.ai.
+ * The upstream response is SSE-formatted; we extract content chunks
+ * and pass them to the callbacks for re-formatting into client SSE.
  */
 export function executeStreamingPipeline(
   response: Response,
@@ -32,16 +62,15 @@ export function executeStreamingPipeline(
 
   const reader = response.body?.getReader();
   if (!reader) {
-    // No body — close immediately and return empty SSE stream
     writer.close().catch(() => {});
     return createSSEResponse(readable);
   }
 
-  // Fire-and-forget streaming IIFE
   (async () => {
     try {
       const utf8Decoder = new SimpleUTF8Decoder();
       const contentChunks: string[] = [];
+      let buffer = "";
 
       if (callbacks.onStart) {
         await callbacks.onStart(writer);
@@ -51,8 +80,29 @@ export function executeStreamingPipeline(
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = utf8Decoder.decode(value, done);
-        if (chunk) {
+        const decoded = utf8Decoder.decode(value, done);
+        if (!decoded) continue;
+
+        buffer += decoded;
+
+        // Process complete SSE events (separated by double newlines)
+        const parts = buffer.split("\n\n");
+        // Keep the last part as buffer (may be incomplete)
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          const chunks = parseSSEChunks(part);
+          for (const chunk of chunks) {
+            contentChunks.push(chunk);
+            await callbacks.onChunk(writer, chunk);
+          }
+        }
+      }
+
+      // Process any remaining buffer
+      if (buffer.trim()) {
+        const chunks = parseSSEChunks(buffer);
+        for (const chunk of chunks) {
           contentChunks.push(chunk);
           await callbacks.onChunk(writer, chunk);
         }

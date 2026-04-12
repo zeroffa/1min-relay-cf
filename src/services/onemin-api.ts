@@ -17,8 +17,7 @@ import { extractTextFromMessageContent } from "../utils/message-processing";
 import type { WebSearchConfig } from "../utils/model-parser";
 import { isVisionModel } from "./model-registry";
 
-// Helper function to format conversation for the API
-// Converts message array to format expected by 1min.ai API
+// Converts message array to a single prompt string for the 1min.ai API
 function formatConversationHistory(
   messages: Message[],
   newInput: string = "",
@@ -38,7 +37,6 @@ function formatConversationHistory(
     }
   }
 
-  // Add the new input if provided
   if (newInput) {
     formattedHistory += `Human: ${newInput}\n\n`;
   }
@@ -59,14 +57,13 @@ export class OneMinApiService {
     apiKey?: string,
   ): Promise<Response> {
     const apiUrl = isStreaming
-      ? this.env.ONE_MIN_CONVERSATION_API_STREAMING_URL
-      : this.env.ONE_MIN_API_URL;
+      ? `${this.env.ONE_MIN_CHAT_API_URL}?isStreaming=true`
+      : this.env.ONE_MIN_CHAT_API_URL;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
-    // Add API key if provided
     if (apiKey) {
       headers["API-KEY"] = apiKey;
     }
@@ -79,7 +76,6 @@ export class OneMinApiService {
       });
 
       if (!response.ok) {
-        // Log the error body for debugging (truncated to avoid large log entries)
         const rawErrorBody = await response.text().catch(() => "(unreadable)");
         const errorBody = rawErrorBody.slice(0, 500);
         console.error(
@@ -91,8 +87,10 @@ export class OneMinApiService {
           },
         );
 
-        // If the error might be related to webSearch parameters, try graceful degradation
-        if (response.status === 400 && requestBody.promptObject?.webSearch) {
+        // If the error might be related to webSearch, try graceful degradation
+        const webSearch =
+          requestBody.promptObject?.settings?.webSearchSettings?.webSearch;
+        if (response.status === 400 && webSearch) {
           console.warn(
             "Attempting graceful degradation: removing webSearch parameters",
           );
@@ -107,7 +105,6 @@ export class OneMinApiService {
 
           if (fallbackResponse.ok) {
             console.log("Graceful degradation successful");
-            // Add header to indicate degradation occurred
             const responseHeaders = new Headers(fallbackResponse.headers);
             responseHeaders.set("X-WebSearch-Degraded", "true");
 
@@ -119,13 +116,15 @@ export class OneMinApiService {
           }
         }
 
-        throw new Error(
+        throw new ApiError(
           `1min.ai API error: ${response.status} ${response.statusText}`,
+          response.status,
         );
       }
 
       return response;
     } catch (error) {
+      if (error instanceof ApiError) throw error;
       console.error("Network error in sendChatRequest:", error);
       throw error;
     }
@@ -134,11 +133,18 @@ export class OneMinApiService {
   private createFallbackRequestBody(
     originalRequestBody: OneMinRequestBody,
   ): OneMinRequestBody {
-    const { webSearch, numOfSite, maxWord, ...restPrompt } =
-      originalRequestBody.promptObject;
+    const { settings, ...restPrompt } = originalRequestBody.promptObject;
     return {
       ...originalRequestBody,
-      promptObject: { ...restPrompt, webSearch: false },
+      promptObject: {
+        ...restPrompt,
+        settings: settings
+          ? {
+              ...settings,
+              webSearchSettings: { webSearch: false },
+            }
+          : undefined,
+      },
     };
   }
 
@@ -150,7 +156,6 @@ export class OneMinApiService {
       "Content-Type": "application/json",
     };
 
-    // Add API key if provided
     if (apiKey) {
       headers["API-KEY"] = apiKey;
     }
@@ -165,10 +170,12 @@ export class OneMinApiService {
     );
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error("=== 1MIN.AI API ERROR RESPONSE ===", errorData);
-      throw new Error(
+      const rawErrorBody = await response.text().catch(() => "(unreadable)");
+      const errorBody = rawErrorBody.slice(0, 500);
+      console.error("=== 1MIN.AI API ERROR RESPONSE ===", errorBody);
+      throw new ApiError(
         `1min.ai API error: ${response.status} ${response.statusText}`,
+        response.status,
       );
     }
 
@@ -184,23 +191,19 @@ export class OneMinApiService {
     _maxTokens?: number,
     webSearchConfig?: WebSearchConfig,
   ): Promise<OneMinRequestBody> {
-    // Process images and check for vision model support
+    // Process images from the latest user message
     const imagePaths: string[] = [];
-    let hasImageRequests = false;
-    let allImagesUploaded = true;
-
-    // Only process images from the latest user message to avoid reprocessing
     const latestMessage =
       messages && messages.length > 0 ? messages[messages.length - 1] : null;
 
     if (latestMessage && Array.isArray(latestMessage.content)) {
       for (const item of latestMessage.content) {
         if (item.type === "image_url" && item.image_url?.url) {
-          hasImageRequests = true;
-
-          // Check if model supports vision inputs
           if (!(await isVisionModel(model, this.env))) {
-            throw new Error(`Model '${model}' does not support image inputs`);
+            throw new ApiError(
+              `Model '${model}' does not support image inputs`,
+              400,
+            );
           }
 
           try {
@@ -213,57 +216,46 @@ export class OneMinApiService {
             imagePaths.push(imagePath);
           } catch (error) {
             console.error("Error processing image:", error);
-            allImagesUploaded = false;
-            // Continue processing other images
           }
         }
       }
     }
 
-    // Format messages for the API call
     const formattedHistory = formatConversationHistory(messages, "");
 
-    // Only use CHAT_WITH_IMAGE if we have image requests AND all images were successfully uploaded
-    if (hasImageRequests && allImagesUploaded && imagePaths.length > 0) {
-      const promptObject: OneMinPromptObject = {
-        prompt: formattedHistory,
-        isMixed: false,
-        imageList: imagePaths,
-      };
+    const promptObject: OneMinPromptObject = {
+      prompt: formattedHistory,
+      settings: {
+        historySettings: {
+          isMixed: false,
+        },
+      },
+    };
 
-      // Add web search parameters if enabled
-      if (webSearchConfig) {
-        promptObject.webSearch = webSearchConfig.webSearch;
-        promptObject.numOfSite = webSearchConfig.numOfSite;
-        promptObject.maxWord = webSearchConfig.maxWord;
-      }
-
-      const requestBody = {
-        type: "CHAT_WITH_IMAGE",
-        model: model,
-        promptObject,
-      };
-
-      return requestBody;
-    } else {
-      const promptObject: OneMinPromptObject = {
-        prompt: formattedHistory,
-        isMixed: false,
-        webSearch: webSearchConfig ? webSearchConfig.webSearch : false,
-      };
-
-      // Add web search parameters if enabled
-      if (webSearchConfig?.webSearch) {
-        promptObject.numOfSite = webSearchConfig.numOfSite;
-        promptObject.maxWord = webSearchConfig.maxWord;
-      }
-
-      return {
-        type: "CHAT_WITH_AI",
-        model: model,
-        promptObject,
+    // Add web search settings if enabled
+    if (webSearchConfig?.webSearch) {
+      promptObject.settings = {
+        ...promptObject.settings,
+        webSearchSettings: {
+          webSearch: true,
+          numOfSite: webSearchConfig.numOfSite,
+          maxWord: webSearchConfig.maxWord,
+        },
       };
     }
+
+    // Add image attachments if any were uploaded
+    if (imagePaths.length > 0) {
+      promptObject.attachments = {
+        images: imagePaths,
+      };
+    }
+
+    return {
+      type: "UNIFY_CHAT_WITH_AI",
+      model: model,
+      promptObject,
+    };
   }
 
   buildImageRequestBody(

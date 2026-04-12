@@ -2,13 +2,34 @@
  * 1min.ai API specific types
  */
 
-export interface OneMinPromptObject {
-  prompt: string;
-  isMixed?: boolean;
-  imageList?: string[];
-  webSearch?: boolean;
+export interface WebSearchSettings {
+  webSearch: boolean;
   numOfSite?: number;
   maxWord?: number;
+}
+
+export interface HistorySettings {
+  isMixed: boolean;
+  historyMessageLimit?: number;
+}
+
+export interface PromptSettings {
+  webSearchSettings?: WebSearchSettings;
+  historySettings?: HistorySettings;
+  withMemories?: boolean;
+}
+
+export interface PromptAttachments {
+  images?: string[];
+  files?: string[];
+}
+
+export interface OneMinPromptObject {
+  prompt: string;
+  settings?: PromptSettings;
+  attachments?: PromptAttachments;
+  conversationId?: string;
+  // Legacy fields used by non-chat features (image generation)
   n?: number;
   size?: string;
   // Audio (Speech-to-Text / Audio Translator) fields
@@ -20,10 +41,8 @@ export interface OneMinPromptObject {
 
 export interface OneMinRequestBody {
   type: string;
-  conversationId?: string;
   model: string;
   promptObject: OneMinPromptObject;
-  metadata?: {
-    messageGroup: string;
-  };
+  brandVoiceId?: string;
+  metadata?: Record<string, unknown>;
 }

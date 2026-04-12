@@ -241,8 +241,8 @@ Returns information about all available endpoints:
 
 The worker implements distributed rate limiting with the following limits:
 
-- **Requests per minute**: 60 per IP address
-- **Tokens per minute**: 10,000 per IP address
+- **Requests per minute**: 180 per IP address
+- **Tokens per minute**: 100,000 per IP address
 
 Rate limits are enforced using Cloudflare KV storage, ensuring consistency across all worker instances.
 
@@ -269,14 +269,15 @@ cd 1min-relay-worker
 npm install
 ```
 
-3. Configure environment variables in `wrangler.toml`:
+3. Configure environment variables in `wrangler.jsonc`:
 
-```toml
-[env.production.vars]
-ONE_MIN_API_URL = "https://api.1min.ai/api/features"
-ONE_MIN_CONVERSATION_API_URL = "https://api.1min.ai/api/conversations"
-ONE_MIN_CONVERSATION_API_STREAMING_URL = "https://api.1min.ai/api/features?isStreaming=true"
-ONE_MIN_ASSET_URL = "https://api.1min.ai/api/assets"
+```jsonc
+"vars": {
+  "ONE_MIN_CHAT_API_URL": "https://api.1min.ai/api/chat-with-ai",
+  "ONE_MIN_API_URL": "https://api.1min.ai/api/features",
+  "ONE_MIN_ASSET_URL": "https://api.1min.ai/api/assets",
+  "ONE_MIN_MODELS_API_URL": "https://api.1min.ai/models"
+}
 ```
 
 4. Create KV namespaces:
@@ -369,10 +370,9 @@ If you encounter issues during deployment:
 
 The following environment variables are configured in `wrangler.jsonc`:
 
-- `ONE_MIN_API_URL`: 1min.ai API endpoint for features
-- `ONE_MIN_CONVERSATION_API_URL`: 1min.ai conversation API endpoint
-- `ONE_MIN_CONVERSATION_API_STREAMING_URL`: 1min.ai streaming API endpoint
-- `ONE_MIN_ASSET_URL`: 1min.ai asset API endpoint
+- `ONE_MIN_CHAT_API_URL`: 1min.ai unified chat endpoint (`/api/chat-with-ai`)
+- `ONE_MIN_API_URL`: 1min.ai features endpoint for non-chat features like image generation (`/api/features`)
+- `ONE_MIN_ASSET_URL`: 1min.ai asset upload endpoint
 - `ONE_MIN_MODELS_API_URL`: 1min.ai models API endpoint (for dynamic model list)
 
 ### KV Namespaces

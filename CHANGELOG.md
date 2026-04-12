@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-04-12
+
+### Changed
+- **BREAKING: Migrated Chat API to new 1min.ai endpoint** — Chat requests now use `POST /api/chat-with-ai` with `type: UNIFY_CHAT_WITH_AI` instead of the deprecated `POST /api/features` with `type: CHAT_WITH_AI`
+- **Unified image chat**: Removed separate `CHAT_WITH_IMAGE` request type; images are now sent via `attachments.images` within `UNIFY_CHAT_WITH_AI`
+- **New request body format**: `promptObject` now uses nested `settings.webSearchSettings`, `settings.historySettings`, and `attachments` instead of flat fields (`webSearch`, `numOfSite`, `maxWord`, `isMixed`, `imageList`)
+- **Streaming SSE parser**: Updated streaming pipeline to parse SSE events (`event: content`, `event: result`, `event: done`) from the new 1min.ai format, with auto-detection fallback to raw text for backwards compatibility
+- **Streaming deduplication**: Detect and skip accumulated full-text chunks that 1min.ai sends as the final `event: content` (prevents duplicate output for models like gpt-5.4)
+- **Error propagation**: `sendChatRequest` and `sendImageRequest` now throw `ApiError` with upstream HTTP status codes instead of plain `Error` (which always resulted in 500)
+
+### Fixed
+- **Responses API streaming terminal event**: Changed `response.done` to `response.completed` to match the official OpenAI SDK `ResponseCompletedEvent` type, fixing "fallback did not emit a terminal response" errors in OpenAI SDK clients
+
+### Removed
+- **`ONE_MIN_CONVERSATION_API_URL`** environment variable — unused
+- **`ONE_MIN_CONVERSATION_API_STREAMING_URL`** environment variable — replaced by `ONE_MIN_CHAT_API_URL?isStreaming=true`
+
+### Added
+- **`ONE_MIN_CHAT_API_URL`** environment variable — new dedicated chat endpoint (`https://api.1min.ai/api/chat-with-ai`)
+
+### Migration
+- Update `wrangler.jsonc` vars: replace `ONE_MIN_CONVERSATION_API_URL` and `ONE_MIN_CONVERSATION_API_STREAMING_URL` with `ONE_MIN_CHAT_API_URL`
+- Image/audio features continue to use `ONE_MIN_API_URL` (`/api/features`) — no change needed
+
 ## [4.1.0] - 2026-03-02
 
 ### Added
