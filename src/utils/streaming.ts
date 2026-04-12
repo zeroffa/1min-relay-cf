@@ -27,38 +27,55 @@ function isSSEFormat(text: string): boolean {
 
 /**
  * Parse SSE content events from 1min.ai streaming response.
- * Extracts text content from `data: {"content":"..."}` lines.
- * Returns null if no SSE data lines were found (caller should use raw text).
+ * Only extracts delta text from `event: content` events.
+ * Ignores `event: result` (full response) and `event: done` (terminator).
+ * Returns null if no SSE structure was found (caller should use raw text).
  */
 function parseSSEChunks(text: string): string[] | null {
   const chunks: string[] = [];
   const lines = text.split("\n");
-  let hasDataLines = false;
+  let hasSSEStructure = false;
+  let currentEventType = "";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]?.trim();
     if (!line) continue;
 
+    // Track event type
+    if (line.startsWith("event: ")) {
+      hasSSEStructure = true;
+      currentEventType = line.slice(7).trim();
+      continue;
+    }
+
+    // Only process data lines from "content" events
     if (line.startsWith("data: ")) {
-      hasDataLines = true;
+      hasSSEStructure = true;
       const dataStr = line.slice(6);
-      // Skip [DONE] markers
       if (dataStr === "[DONE]") continue;
+
+      // Skip non-content events (result, done, error)
+      if (currentEventType && currentEventType !== "content") {
+        currentEventType = "";
+        continue;
+      }
+
       try {
         const parsed = JSON.parse(dataStr) as Record<string, unknown>;
         if (typeof parsed.content === "string" && parsed.content) {
           chunks.push(parsed.content);
         }
       } catch {
-        // Not JSON — treat as raw text content
+        // Not JSON — treat as raw text content if from a content event
         if (dataStr.trim()) {
           chunks.push(dataStr);
         }
       }
+      currentEventType = "";
     }
   }
 
-  return hasDataLines ? chunks : null;
+  return hasSSEStructure ? chunks : null;
 }
 
 /**
@@ -123,6 +140,10 @@ export function executeStreamingPipeline(
           const chunks = parseSSEChunks(part);
           if (chunks) {
             for (const chunk of chunks) {
+              // Skip duplicate: 1min.ai sends accumulated full text as last content event
+              const accumulated = contentChunks.join("");
+              if (accumulated && chunk === accumulated) continue;
+
               contentChunks.push(chunk);
               await callbacks.onChunk(writer, chunk);
             }
@@ -135,6 +156,9 @@ export function executeStreamingPipeline(
         const chunks = parseSSEChunks(buffer);
         if (chunks) {
           for (const chunk of chunks) {
+            const accumulated = contentChunks.join("");
+            if (accumulated && chunk === accumulated) continue;
+
             contentChunks.push(chunk);
             await callbacks.onChunk(writer, chunk);
           }

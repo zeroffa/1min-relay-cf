@@ -229,6 +229,7 @@ export class OneMinApiService {
         historySettings: {
           isMixed: false,
         },
+        withMemories: false,
       },
     };
 

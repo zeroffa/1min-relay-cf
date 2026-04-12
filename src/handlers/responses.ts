@@ -281,8 +281,8 @@ export class ResponseHandler extends BaseTextHandler {
             total_tokens: inputTokens + outputTokens,
           },
         };
-        await writeSSEEventWithType(writer, "response.done", {
-          type: "response.done",
+        await writeSSEEventWithType(writer, "response.completed", {
+          type: "response.completed",
           response: finalResponse,
         });
 

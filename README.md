@@ -154,7 +154,7 @@ curl -X POST http://localhost:8787/v1/responses \
 - **Structured Outputs**: JSON objects and JSON schema validation
 - **Reasoning Effort**: Control reasoning depth (low, medium, high)
 - **Vision Support**: Same image input capabilities as Chat Completions
-- **No Streaming**: Responses API returns complete responses only
+- **Streaming Support**: Full OpenAI-compatible SSE streaming with `response.completed` terminal event
 - **Enhanced Prompting**: Automatically optimizes prompts for structured responses
 
 ### Image Generation
