@@ -17,6 +17,16 @@ import { extractTextFromMessageContent } from "../utils/message-processing";
 import type { WebSearchConfig } from "../utils/model-parser";
 import { isVisionModel } from "./model-registry";
 
+// Map upstream HTTP status to a safe client-facing error message
+function sanitizeUpstreamError(status: number): string {
+  if (status === 401) return "Authentication failed with upstream provider";
+  if (status === 403) return "Access denied by upstream provider";
+  if (status === 404) return "Resource not found on upstream provider";
+  if (status === 429) return "Rate limited by upstream provider";
+  if (status >= 500) return "Upstream provider returned an internal error";
+  return "Upstream request failed";
+}
+
 // Converts message array to a single prompt string for the 1min.ai API
 function formatConversationHistory(
   messages: Message[],
@@ -104,20 +114,13 @@ export class OneMinApiService {
           });
 
           if (fallbackResponse.ok) {
-            console.log("Graceful degradation successful");
-            const responseHeaders = new Headers(fallbackResponse.headers);
-            responseHeaders.set("X-WebSearch-Degraded", "true");
-
-            return new Response(fallbackResponse.body, {
-              status: fallbackResponse.status,
-              statusText: fallbackResponse.statusText,
-              headers: responseHeaders,
-            });
+            console.warn("Graceful degradation successful");
+            return fallbackResponse;
           }
         }
 
         throw new ApiError(
-          `1min.ai API error: ${response.status} ${response.statusText}`,
+          sanitizeUpstreamError(response.status),
           response.status,
         );
       }
@@ -172,9 +175,9 @@ export class OneMinApiService {
     if (!response.ok) {
       const rawErrorBody = await response.text().catch(() => "(unreadable)");
       const errorBody = rawErrorBody.slice(0, 500);
-      console.error("=== 1MIN.AI API ERROR RESPONSE ===", errorBody);
+      console.error("1min.ai image API error:", errorBody);
       throw new ApiError(
-        `1min.ai API error: ${response.status} ${response.statusText}`,
+        sanitizeUpstreamError(response.status),
         response.status,
       );
     }
@@ -216,6 +219,7 @@ export class OneMinApiService {
             imagePaths.push(imagePath);
           } catch (error) {
             console.error("Error processing image:", error);
+            throw new ApiError("Failed to process image attachment", 422);
           }
         }
       }

@@ -3,8 +3,8 @@
  */
 export interface Env {
   // API URLs for 1min.ai services
-  ONE_MIN_CHAT_API_URL: string;
-  ONE_MIN_API_URL: string;
+  ONE_MIN_CHAT_API_URL: string; // Chat endpoint (/api/chat-with-ai)
+  ONE_MIN_API_URL: string; // Non-chat features: image generation, audio, etc. (/api/features)
   ONE_MIN_ASSET_URL: string;
 
   // Models API URL

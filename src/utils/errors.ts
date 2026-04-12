@@ -91,10 +91,10 @@ export function toOpenAIError(error: unknown): {
     };
   }
 
-  // Default error handling
+  // Default error handling — never leak internal details to clients
   if (error instanceof Error) {
     return {
-      message: error.message,
+      message: "An internal error occurred",
       type: "api_error",
       param: null,
       code: null,
@@ -159,10 +159,11 @@ export function toAnthropicError(error: unknown): {
     };
   }
 
+  // Never leak internal details to clients
   if (error instanceof Error) {
     return {
       type: "api_error",
-      message: error.message,
+      message: "An internal error occurred",
       status: 500,
     };
   }

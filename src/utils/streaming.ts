@@ -19,10 +19,12 @@ export interface StreamingCallbacks {
 }
 
 /**
- * Check if text looks like SSE format (contains "data: " or "event: " lines).
+ * Check if text looks like SSE format (line-anchored check for "data: " or "event: ").
+ * Issue #4: anchored to line start to avoid false positives from response content.
  */
+const SSE_LINE_PATTERN = /(^|\n)(data|event): /;
 function isSSEFormat(text: string): boolean {
-  return text.includes("data: ") || text.includes("event: ");
+  return SSE_LINE_PATTERN.test(text);
 }
 
 /**
@@ -30,6 +32,9 @@ function isSSEFormat(text: string): boolean {
  * Only extracts delta text from `event: content` events.
  * Ignores `event: result` (full response) and `event: done` (terminator).
  * Returns null if no SSE structure was found (caller should use raw text).
+ *
+ * Issue #6: eventType persists across multiple data lines within the same event block,
+ * only reset on empty line or next event: line.
  */
 function parseSSEChunks(text: string): string[] | null {
   const chunks: string[] = [];
@@ -39,7 +44,12 @@ function parseSSEChunks(text: string): string[] | null {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]?.trim();
-    if (!line) continue;
+
+    // Empty line marks end of an SSE event block — reset event type
+    if (!line) {
+      currentEventType = "";
+      continue;
+    }
 
     // Track event type
     if (line.startsWith("event: ")) {
@@ -48,7 +58,7 @@ function parseSSEChunks(text: string): string[] | null {
       continue;
     }
 
-    // Only process data lines from "content" events
+    // Process data lines
     if (line.startsWith("data: ")) {
       hasSSEStructure = true;
       const dataStr = line.slice(6);
@@ -56,7 +66,6 @@ function parseSSEChunks(text: string): string[] | null {
 
       // Skip non-content events (result, done, error)
       if (currentEventType && currentEventType !== "content") {
-        currentEventType = "";
         continue;
       }
 
@@ -71,7 +80,6 @@ function parseSSEChunks(text: string): string[] | null {
           chunks.push(dataStr);
         }
       }
-      currentEventType = "";
     }
   }
 
@@ -99,9 +107,10 @@ export function executeStreamingPipeline(
   (async () => {
     try {
       const utf8Decoder = new SimpleUTF8Decoder();
-      const contentChunks: string[] = [];
+      let accumulatedContent = "";
       let buffer = "";
-      let detectedSSE: boolean | null = null; // null = not yet determined
+      // Issue #5: defer SSE detection until first double-newline boundary
+      let detectedSSE: boolean | null = null;
 
       if (callbacks.onStart) {
         await callbacks.onStart(writer);
@@ -114,25 +123,37 @@ export function executeStreamingPipeline(
         const decoded = utf8Decoder.decode(value, done);
         if (!decoded) continue;
 
-        // Auto-detect format on first chunk
+        // Accumulate into buffer first; detect format once we have a complete event
+        buffer += decoded;
+
+        // Issue #5: defer detection until we see a double-newline (complete SSE event)
         if (detectedSSE === null) {
-          detectedSSE = isSSEFormat(decoded);
-          if (!detectedSSE) {
-            console.log(
-              "Streaming: raw text mode (upstream is not SSE-formatted)",
-            );
+          if (buffer.includes("\n\n")) {
+            detectedSSE = isSSEFormat(buffer);
+            if (!detectedSSE) {
+              // Issue #9: use console.warn instead of console.log
+              console.warn(
+                "Streaming: raw text mode (upstream is not SSE-formatted)",
+              );
+              // Flush entire buffer as raw text
+              accumulatedContent += buffer;
+              await callbacks.onChunk(writer, buffer);
+              buffer = "";
+            }
           }
+          // If no double-newline yet, keep buffering
+          if (detectedSSE === null) continue;
         }
 
         if (!detectedSSE) {
           // Raw text mode (legacy/fallback)
-          contentChunks.push(decoded);
-          await callbacks.onChunk(writer, decoded);
+          accumulatedContent += buffer;
+          await callbacks.onChunk(writer, buffer);
+          buffer = "";
           continue;
         }
 
-        // SSE mode: buffer and split on double newlines
-        buffer += decoded;
+        // SSE mode: split on double newlines
         const parts = buffer.split("\n\n");
         buffer = parts.pop() || "";
 
@@ -140,11 +161,11 @@ export function executeStreamingPipeline(
           const chunks = parseSSEChunks(part);
           if (chunks) {
             for (const chunk of chunks) {
-              // Skip duplicate: 1min.ai sends accumulated full text as last content event
-              const accumulated = contentChunks.join("");
-              if (accumulated && chunk === accumulated) continue;
+              // Issue #1: dedup using running accumulated string (O(1) per check)
+              // 1min.ai sends the full accumulated text as the final content event
+              if (accumulatedContent && chunk === accumulatedContent) continue;
 
-              contentChunks.push(chunk);
+              accumulatedContent += chunk;
               await callbacks.onChunk(writer, chunk);
             }
           }
@@ -156,16 +177,14 @@ export function executeStreamingPipeline(
         const chunks = parseSSEChunks(buffer);
         if (chunks) {
           for (const chunk of chunks) {
-            const accumulated = contentChunks.join("");
-            if (accumulated && chunk === accumulated) continue;
+            if (accumulatedContent && chunk === accumulatedContent) continue;
 
-            contentChunks.push(chunk);
+            accumulatedContent += chunk;
             await callbacks.onChunk(writer, chunk);
           }
         }
       }
 
-      const accumulatedContent = contentChunks.join("");
       await callbacks.onEnd(writer, accumulatedContent);
       await writer.close();
     } catch (error) {
