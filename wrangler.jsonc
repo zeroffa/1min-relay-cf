@@ -45,11 +45,11 @@
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT_STORE",
-      "id": "3b5918a50e05462aad599d537192af7d"
+      "id": "aa1d71ee7b584fe7a48a54a134ef46cd"
     },
     {
       "binding": "MODEL_CACHE",
-      "id": "a0075251c12d4ae89ff4a73dbc571827"
+      "id": "4f8d6818363f457591b73896259d3700"
     },
   ],
 
